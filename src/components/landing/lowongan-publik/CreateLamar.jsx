@@ -1,4 +1,13 @@
-import { ArrowLeft, Save, X, FileText, Image } from "lucide-react";
+import {
+  ArrowLeft,
+  Save,
+  X,
+  FileText,
+  Image,
+  CheckCircle,
+  Copy,
+  Download,
+} from "lucide-react";
 import { useState } from "react";
 import api from "../../../services/api";
 import { useNavigate, useParams } from "react-router-dom";
@@ -10,6 +19,8 @@ const CreateLamaranPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [loading, setLoading] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [kodeLamaran, setKodeLamaran] = useState("");
 
   const [formData, setFormData] = useState({
     lowongan_kerja_id: id || "",
@@ -157,10 +168,21 @@ const CreateLamaranPage = () => {
           "Content-Type": "multipart/form-data",
         },
       });
+      console.log(response.data);
 
-      setFormData(response.data);
+      const kode = response.data.data?.token_pendaftaran;
+
+      console.log(kode);
+
+      if (kode) {
+        setKodeLamaran(kode);
+        setShowSuccessModal(true);
+      } else {
+        succesError("Lamaran berhasil dikirim");
+        navigate("/lowongan-publik");
+      }
+
       succesError("Lamaran berhasil dikirim");
-      navigate("/lowongan-publik");
     } catch (error) {
       showError(error.response?.data?.message || "Gagal mengirim lamaran");
     } finally {
@@ -173,6 +195,98 @@ const CreateLamaranPage = () => {
       navigate("/lowongan-publik");
     }
   };
+
+  const handleCopyKode = () => {
+    navigator.clipboard.writeText(kodeLamaran);
+    succesError("Kode berhasil disalin!");
+  };
+
+  const handleDownloadKode = () => {
+    const element = document.createElement("a");
+    const file = new Blob(
+      [
+        `KODE LAMARAN PEKERJAAN\n\n` +
+          `Kode: ${kodeLamaran}\n\n` +
+          `Simpan kode ini untuk mengecek status lamaran Anda.\n` +
+          `Akses: ${window.location.origin}/cek-status-lamaran\n\n` +
+          `Terima kasih telah melamar!`,
+      ],
+      { type: "text/plain" },
+    );
+    element.href = URL.createObjectURL(file);
+    element.download = `Kode_Lamaran_${kodeLamaran}.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    succesError("Kode berhasil didownload!");
+  };
+
+  const SuccessModal = () => (
+    <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50 p-4">
+      {" "}
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+        <div className="flex justify-center mb-4">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+            <CheckCircle className="w-10 h-10 text-green-600" />
+          </div>
+        </div>
+
+        <h2 className="text-2xl font-bold text-center text-gray-900 mb-2">
+          Lamaran Berhasil Dikirim!
+        </h2>
+        <p className="text-center text-gray-600 mb-6">
+          Simpan kode di bawah untuk mengecek status lamaran Anda
+        </p>
+
+        <div className="bg-gradient-to-r from-cyan-50 to-blue-50 border-2 border-cyan-300 rounded-lg p-6 mb-6">
+          <p className="text-sm text-gray-600 text-center mb-2">
+            Kode Lamaran Anda
+          </p>
+          <p className="text-3xl font-bold text-center text-cyan-700 tracking-wider break-all">
+            {kodeLamaran}
+          </p>
+        </div>
+
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-6">
+          <p className="text-sm text-yellow-800">
+            ⚠️ <strong>Penting:</strong> Simpan kode ini dengan baik. Anda akan
+            membutuhkannya untuk mengecek status lamaran.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          <button
+            type="button"
+            onClick={handleCopyKode}
+            className="w-full flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-3 rounded-lg transition-colors"
+          >
+            <Copy size={20} />
+            <span>Salin Kode</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleDownloadKode}
+            className="w-full flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-3 rounded-lg transition-colors"
+          >
+            <Download size={20} />
+            <span>Download Kode</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setShowSuccessModal(false);
+              navigate("/lowongan-publik");
+            }}
+            className="w-full text-gray-600 hover:text-gray-800 px-4 py-2 rounded-lg transition-colors"
+          >
+            Kembali ke Lowongan
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   const FileUploadBox = ({
     label,
@@ -268,6 +382,9 @@ const CreateLamaranPage = () => {
   return (
     <>
       <Navbar />
+
+      {showSuccessModal && <SuccessModal />}
+
       <div className="min-h-screen bg-gray-50 pt-25">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-6">
