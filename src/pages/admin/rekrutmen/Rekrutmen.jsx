@@ -7,7 +7,6 @@ import {
   Clock,
   MapPin,
   Briefcase,
-  DollarSign,
   Calendar,
   Eye,
 } from "lucide-react";
@@ -15,7 +14,7 @@ import { useEffect, useState } from "react";
 import api from "../../../services/api";
 import { useNavigate } from "react-router-dom";
 import { ClipLoader } from "react-spinners";
-import { showError } from "../../../utils/notify";
+import { showError, succesError } from "../../../utils/notify";
 
 const RekrutmenPage = () => {
   const navigate = useNavigate();
@@ -51,10 +50,10 @@ const RekrutmenPage = () => {
     try {
       await api.delete(`/lowongan/${id}`);
       setLowongan((prev) => prev.filter((item) => item.id !== id));
-      alert("Lowongan berhasil dihapus");
+      succesError("Lowongan berhasil dihapus");
     } catch (error) {
       console.log(error);
-      alert(error.response?.data?.message || "Gagal menghapus lowongan");
+      showError(error.response?.data?.message || "Gagal menghapus lowongan");
     }
   };
 
@@ -85,9 +84,6 @@ const RekrutmenPage = () => {
         status_lowongan: newStatus,
       };
 
-      console.log("Updating lowongan ID:", id);
-      console.log("Update data:", updateData);
-
       const response = await api.put(`/lowongan/${id}`, updateData);
 
       console.log("Update response:", response.data);
@@ -98,7 +94,7 @@ const RekrutmenPage = () => {
         ),
       );
 
-      alert(
+      succesError(
         `Lowongan berhasil ${newStatus === "aktif" ? "diaktifkan" : "dinonaktifkan"}`,
       );
     } catch (error) {
@@ -106,13 +102,13 @@ const RekrutmenPage = () => {
       console.error("Error response:", error.response?.data);
 
       if (error.response?.status === 404) {
-        alert("Lowongan tidak ditemukan. Mungkin sudah dihapus.");
+        showError("Lowongan tidak ditemukan. Mungkin sudah dihapus.");
       } else if (error.response?.status === 422) {
         const errors = error.response.data.errors;
         const errorMessages = Object.values(errors).flat().join(", ");
-        alert(`Validasi gagal: ${errorMessages}`);
+        showError(`Validasi gagal: ${errorMessages}`);
       } else {
-        alert(
+        showError(
           error.response?.data?.message || "Gagal mengubah status lowongan",
         );
       }
@@ -362,7 +358,6 @@ const RekrutmenPage = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-1 text-sm text-gray-900">
-                          <DollarSign size={14} className="text-green-600" />
                           <span className="font-medium">{l.range_gaji}</span>
                         </div>
                       </td>
@@ -394,7 +389,7 @@ const RekrutmenPage = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button
-                          onClick={() => navigate(`/pelamar-lowongan/${l.id}`)}
+                          onClick={() => navigate(`/daftar-pelamar/${l.id}`)}
                           className="flex items-center gap-1 text-sm text-purple-600 hover:text-purple-800 font-medium"
                         >
                           <Users size={16} />

@@ -32,6 +32,7 @@ import UpdateLowonganPage from "./pages/admin/rekrutmen/UpdateLowongan";
 import LowonganPublikPage from "./components/landing/lowongan-publik/Lowongan";
 import DetailLowonganPublikPage from "./components/landing/lowongan-publik/DetailLowongan";
 import CreateLamarPage from "./components/landing/lowongan-publik/CreateLamar";
+import DaftarPelamarPage from "./pages/admin/pelamar/Pelamar";
 
 function App() {
   return (
@@ -90,6 +91,8 @@ function App() {
           <Route path="/create-rekrutmen" element={<CreateRekrutmenPage />} />
           <Route path="/detail-lowongan/:id" element={<DetailLowonganPage />} />
           <Route path="/update-lowongan/:id" element={<UpdateLowonganPage />} />
+          {/* Pelamar Routes */}
+          <Route path="/daftar-pelamar/:id" element={<DaftarPelamarPage />} />
           {/* Laporan Routes */}
           <Route path="/laporan" element={<Laporan />} />
         </Route>
