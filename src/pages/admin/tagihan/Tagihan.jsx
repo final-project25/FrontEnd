@@ -1,14 +1,6 @@
 import React, { useEffect, useState } from "react";
 import api from "../../../services/api";
-import {
-  Edit,
-  Eye,
-  FileText,
-  Plus,
-  Search,
-  Trash2,
-  Download,
-} from "lucide-react";
+import { Edit, Eye, Plus, Search, Trash2, Download } from "lucide-react";
 import { ClipLoader } from "react-spinners";
 import { useNavigate } from "react-router-dom";
 import { succesError, showError } from "../../../utils/notify";
@@ -327,12 +319,7 @@ const TagihanPage = () => {
                         >
                           <Eye size={18} />
                         </button>
-                        <button
-                          className="text-green-600 hover:text-green-800"
-                          title="Cetak Slip Gaji"
-                        >
-                          <FileText size={18} />
-                        </button>
+
                         <button
                           onClick={() => navigate(`/update-tagihan/${t.id}`)}
                           className="text-yellow-600 hover:text-yellow-800"
