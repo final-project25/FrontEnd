@@ -6,6 +6,7 @@ import {
   Trash2,
   FileText,
   Download,
+  Send,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import api from "../../../services/api";
@@ -18,6 +19,7 @@ const PenggajianPage = () => {
   const [penggajian, setPenggajian] = useState([]);
   const [loading, setLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
+  const [slipGajiKaryawan, setSlipGajiKaryawan] = useState({});
   const [filterTahun, setFilterTahun] = useState(new Date().getFullYear());
   const [filterBulan, setFilterBulan] = useState(new Date().getMonth() + 1);
 
@@ -51,6 +53,33 @@ const PenggajianPage = () => {
     } catch (error) {
       console.log(error);
       alert(error.response?.data?.message || "Gagal menghapus data");
+    }
+  };
+
+  const handleSendWhatsApp = async (id, namaKaryawan) => {
+    const confirmSend = window.confirm(
+      `Kirim slip gaji ke WhatsApp ${namaKaryawan}?`,
+    );
+
+    if (!confirmSend) return;
+
+    try {
+      setSlipGajiKaryawan((prev) => ({ ...prev, [id]: true }));
+      const response = await api.get(`/penggajian/${id}/send-whatsapp`);
+      const { whatsapp_url, karyawan, no_wa } = response.data.data;
+      window.open(whatsapp_url, "_blank");
+
+      succesError(`Slip gaji ${karyawan} siap dikirim ke ${no_wa}`);
+    } catch (error) {
+      console.log(error);
+      showError(error.response?.data?.message || "Gagal generate URL WhatsApp");
+    } finally {
+      // Remove loading untuk item ini
+      setSlipGajiKaryawan((prev) => {
+        const newState = { ...prev };
+        delete newState[id];
+        return newState;
+      });
     }
   };
 
@@ -349,10 +378,16 @@ const PenggajianPage = () => {
                           <Eye size={18} />
                         </button>
                         <button
-                          className="text-green-600 hover:text-green-800"
-                          title="Cetak Slip Gaji"
+                          onClick={() => handleSendWhatsApp(p.id, p.nama)}
+                          disabled={slipGajiKaryawan[p.id]}
+                          className="text-green-600 hover:text-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Kirim Slip Gaji via WhatsApp"
                         >
-                          <FileText size={18} />
+                          {slipGajiKaryawan[p.id] ? (
+                            <ClipLoader color="#16a34a" size={16} />
+                          ) : (
+                            <Send size={18} />
+                          )}
                         </button>
                         <button
                           onClick={() => navigate(`/update-penggajian/${p.id}`)}
