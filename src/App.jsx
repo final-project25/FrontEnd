@@ -9,8 +9,8 @@ import HomePage from "./pages/public/home";
 
 import DashboardLayout from "./components/layouts/AdminDashboard";
 import Dashboard from "./pages/admin/Dashboard";
-import LoginPage from "./pages/admin/auth/login";
-import RegisterPage from "./pages/admin/auth/register";
+import LoginPage from "./pages/admin/auth/Login";
+import RegisterPage from "./pages/admin/auth/Register";
 import KaryawanPage from "./pages/admin/karyawan/Karyawan";
 import Laporan from "./pages/admin/laporan/Laporan";
 import UpdateKaryawanPage from "./pages/admin/karyawan/UpdateKaryawan";
