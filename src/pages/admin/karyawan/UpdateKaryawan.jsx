@@ -20,8 +20,7 @@ const UpdateKaryawanPage = () => {
     alamat: "",
     no_wa: "",
     tanggal_masuk: "",
-    tanggal_aktif: "",
-    tanggal_keluar: "",
+    status_aktif: "1",
   });
 
   useEffect(() => {
@@ -32,9 +31,28 @@ const UpdateKaryawanPage = () => {
     try {
       setLoading(true);
       const response = await api.get(`/karyawan/${id}`);
-      setFormData(response.data.data);
+      const data = response.data.data;
+
+      const formatDate = (isoDate) => {
+        if (!isoDate) return "";
+        return isoDate.split("T")[0];
+      };
+
+      setFormData({
+        nomor_induk: data.nomor_induk || "",
+        nik: data.nik || "",
+        no_rek_bri: data.no_rek_bri || "",
+        nama_lengkap: data.nama_lengkap || "",
+        posisi: data.posisi || "",
+        email: data.email || "",
+        alamat: data.alamat || "",
+        no_wa: data.no_wa || "",
+        tanggal_masuk: formatDate(data.tanggal_masuk),
+        status_aktif: data.status_aktif ? "1" : "0",
+      });
     } catch (error) {
       console.log(error);
+      showError("Gagal memuat data karyawan");
     } finally {
       setLoading(false);
     }
@@ -44,14 +62,20 @@ const UpdateKaryawanPage = () => {
     e.preventDefault();
     try {
       setLoading(true);
-      const response = await api.put(`/karyawan/${id}`, formData);
+
+      const submitData = {
+        ...formData,
+        status_aktif: parseInt(formData.status_aktif),
+      };
+
+      const response = await api.put(`/karyawan/${id}`, submitData);
       console.log(response.data);
-      succesError("Data Karyawan berhasil ditambahkan");
+      succesError("Data Karyawan berhasil diperbarui");
       navigate("/karyawan");
     } catch (error) {
       console.log(error);
       showError(
-        error.response?.data?.message || "Gagal menambahkan data karyawan",
+        error.response?.data?.message || "Gagal memperbarui data karyawan",
       );
     } finally {
       setLoading(false);
@@ -65,7 +89,7 @@ const UpdateKaryawanPage = () => {
 
   const handleCancel = () => {
     if (window.confirm("Anda yakin untuk cancel?")) {
-      navigate("/penggajian");
+      navigate("/karyawan");
     }
   };
 
@@ -101,6 +125,7 @@ const UpdateKaryawanPage = () => {
                   onChange={handleChange}
                   placeholder="Contoh: KRY001"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  required
                 />
               </div>
 
@@ -115,6 +140,7 @@ const UpdateKaryawanPage = () => {
                   onChange={handleChange}
                   placeholder="Masukkan nama lengkap"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  required
                 />
               </div>
 
@@ -130,20 +156,22 @@ const UpdateKaryawanPage = () => {
                   placeholder="16 digit NIK"
                   maxLength="16"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  required
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Alamat <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   rows="3"
-                  type="text"
                   name="alamat"
                   value={formData.alamat}
                   onChange={handleChange}
                   placeholder="Masukan alamat lengkap"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent resize-none"
+                  required
                 />
               </div>
             </div>
@@ -163,13 +191,14 @@ const UpdateKaryawanPage = () => {
                   value={formData.posisi}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  required
                 >
                   <option value="">Pilih posisi</option>
                   <option value="cleaning_service">Cleaning Service</option>
                   <option value="supir">Supir</option>
-                  <option value="security">Security</option>
-                  <option value="admin">Admin</option>
-                  <option value="manager">Manager</option>
+                  <option value="security">Keamanan</option>
+                  <option value="admin">Jasa</option>
+                  <option value="manager">Operator</option>
                 </select>
               </div>
 
@@ -183,6 +212,7 @@ const UpdateKaryawanPage = () => {
                   value={formData.tanggal_masuk}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  required
                 />
               </div>
 
@@ -197,7 +227,7 @@ const UpdateKaryawanPage = () => {
                       name="status_aktif"
                       onChange={handleChange}
                       value="1"
-                      defaultChecked
+                      checked={formData.status_aktif === "1"} // ✅ Controlled component
                       className="w-4 h-4 text-cyan-600 focus:ring-cyan-500"
                     />
                     <span className="ml-2 text-sm text-gray-700">Aktif</span>
@@ -208,6 +238,7 @@ const UpdateKaryawanPage = () => {
                       name="status_aktif"
                       onChange={handleChange}
                       value="0"
+                      checked={formData.status_aktif === "0"} // ✅ Controlled component
                       className="w-4 h-4 text-cyan-600 focus:ring-cyan-500"
                     />
                     <span className="ml-2 text-sm text-gray-700">
@@ -235,6 +266,7 @@ const UpdateKaryawanPage = () => {
                   onChange={handleChange}
                   placeholder="contoh@email.com"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  required
                 />
               </div>
 
@@ -250,6 +282,7 @@ const UpdateKaryawanPage = () => {
                   placeholder="08xxxxxxxxxx"
                   maxLength="13"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  required
                 />
               </div>
 
@@ -264,6 +297,7 @@ const UpdateKaryawanPage = () => {
                   onChange={handleChange}
                   placeholder="Masukkan nomor rekening BRI"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  required
                 />
               </div>
             </div>
