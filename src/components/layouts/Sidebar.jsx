@@ -3,9 +3,9 @@ import {
   Users,
   DollarSign,
   UserPlus,
-  BarChart3,
   LogOut,
   Banknote,
+  Contact,
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -24,7 +24,7 @@ const Sidebar = () => {
     { icon: Banknote, label: "Tagihan", path: "/tagihan" },
     { icon: DollarSign, label: "Penggajian", path: "/penggajian" },
     { icon: UserPlus, label: "Rekrutmen", path: "/rekrutmen" },
-    { icon: BarChart3, label: "Laporan", path: "/laporan" },
+    { icon: Contact, label: "Kontak", path: "/admin/kontak" },
   ];
 
   useEffect(() => {

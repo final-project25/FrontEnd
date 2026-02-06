@@ -6,6 +6,7 @@ const Navbar = () => {
   const navLinks = [
     { type: "anchor", href: "#beranda", label: "Beranda" },
     { type: "anchor", href: "#tentang", label: "Tentang" },
+    { type: "route", href: "/kontak", label: "Kontak" },
     { type: "route", href: "/lowongan-publik", label: "Lowongan" },
   ];
 

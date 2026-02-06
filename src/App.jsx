@@ -33,12 +33,18 @@ import CreateLamarPage from "./components/landing/lowongan-publik/CreateLamar";
 import DaftarPelamarPage from "./pages/admin/pelamar/Pelamar";
 import LoginPage from "./pages/admin/auth/login";
 import RegisterPage from "./pages/admin/auth/register";
+import KontakForm from "./components/landing/kontak/Kontak";
+import KontakPage from "./pages/admin/kontak/Kontak";
+import DetailKontakPage from "./pages/admin/kontak/DetailKontak";
 
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<HomePage />} />
+
+        {/* Kontak Routes */}
+        <Route path="/kontak" element={<KontakForm />} />
 
         {/* Lowongan Publik Routes */}
         <Route path="/lowongan-publik" element={<LowonganPublikPage />} />
@@ -94,7 +100,8 @@ function App() {
           {/* Pelamar Routes */}
           <Route path="/daftar-pelamar/:id" element={<DaftarPelamarPage />} />
           {/* Laporan Routes */}
-          <Route path="/laporan" element={<Laporan />} />
+          <Route path="/admin/kontak" element={<KontakPage />} />
+          <Route path="/admin/kontak/:id" element={<DetailKontakPage />} />
         </Route>
       </Routes>
     </Router>
