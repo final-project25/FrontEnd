@@ -44,8 +44,11 @@ const CreateTagihanPage = () => {
     try {
       setLoading(true);
       const response = await api.get("/karyawan");
-      const data = response.data.data;
-      setKaryawan(data.filter((k) => k.status_aktif === 1));
+      const karyawanData = response.data.data;
+      const activeKaryawan = karyawanData.filter(
+        (k) => k.status_aktif === true,
+      );
+      setKaryawan(activeKaryawan);
     } catch (error) {
       showError("Gagal memuat data karyawan");
       console.log(error);
