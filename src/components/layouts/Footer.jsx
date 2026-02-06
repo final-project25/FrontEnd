@@ -26,15 +26,13 @@ const Footer = () => {
           }`}
         >
           <img
-            src="/src/public/images/logo2.png"
+            src="/images/logo2.png"
             alt="PT Surya Tamado Mandiri Logo"
             className="w-32 h-32 object-contain hover:scale-110 transition-transform duration-300"
           />
         </div>
 
-        {/* Grid Content */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10 items-start">
-          {/* Company Info */}
           <div
             className={`flex flex-col mb-6 transition-all duration-700 ${
               footerVisible
@@ -54,7 +52,6 @@ const Footer = () => {
             </p>
           </div>
 
-          {/* Social Media */}
           <div
             className={`flex flex-col items-center transition-all duration-700 ${
               footerVisible ? "opacity-100 scale-100" : "opacity-0 scale-75"
@@ -85,7 +82,6 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Support */}
           <div
             className={`flex flex-col transition-all duration-700 ${
               footerVisible
@@ -108,7 +104,6 @@ const Footer = () => {
         </div>
       </div>
 
-      {/* Copyright */}
       <div className="bg-primary border-t border-white/20 mt-8">
         <p
           className={`text-center text-sm py-4 text-cyan-50 transition-all duration-700 ${
