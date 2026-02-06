@@ -15,6 +15,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { showError, succesError } from "../../../utils/notify";
 import { ClipLoader } from "react-spinners";
 import Navbar from "../../layouts/Navbar";
+import Footer from "../../layouts/Footer";
 
 const CreateLamaranPage = () => {
   const navigate = useNavigate();
