@@ -42,8 +42,11 @@ const CreatePenggajianPage = () => {
     try {
       setLoading(true);
       const response = await api.get("/karyawan");
-      const data = response.data.data;
-      setKaryawan(data.filter((k) => k.status_aktif === 1));
+      const karyawanData = response.data.data;
+      const activeKaryawan = karyawanData.filter(
+        (k) => k.status_aktif === true,
+      );
+      setKaryawan(activeKaryawan);
     } catch (error) {
       showError("Gagal memuat data karyawan");
       console.log(error);
@@ -57,7 +60,7 @@ const CreatePenggajianPage = () => {
     const selectedKaryawan = karyawan.find(
       (k) => k.id === parseInt(selectedId),
     );
-    if (karyawan) {
+    if (selectedKaryawan) {
       setFormData((prev) => ({
         ...prev,
         no_induk: selectedKaryawan.nomor_induk,
