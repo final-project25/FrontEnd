@@ -9,7 +9,6 @@ import HomePage from "./pages/public/home";
 
 import DashboardLayout from "./components/layouts/AdminDashboard";
 import Dashboard from "./pages/admin/Dashboard";
-
 import KaryawanPage from "./pages/admin/karyawan/Karyawan";
 import Laporan from "./pages/admin/laporan/Laporan";
 import UpdateKaryawanPage from "./pages/admin/karyawan/UpdateKaryawan";
@@ -32,6 +31,8 @@ import LowonganPublikPage from "./components/landing/lowongan-publik/Lowongan";
 import DetailLowonganPublikPage from "./components/landing/lowongan-publik/DetailLowongan";
 import CreateLamarPage from "./components/landing/lowongan-publik/CreateLamar";
 import DaftarPelamarPage from "./pages/admin/pelamar/Pelamar";
+import LoginPage from "./pages/admin/auth/login";
+import RegisterPage from "./pages/admin/auth/register";
 
 function App() {
   return (
