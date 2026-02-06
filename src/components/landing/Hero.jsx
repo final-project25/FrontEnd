@@ -1,6 +1,8 @@
+import { useNavigate } from "react-router-dom";
 import Button from "../Elements/Button";
 
 const HeroSection = () => {
+  const navigate = useNavigate();
   return (
     <section
       id="beranda"
@@ -20,6 +22,7 @@ const HeroSection = () => {
               cerah dan terarah
             </p>
             <Button
+              onClick={() => navigate("/lowongan-publik")}
               className="text-xl font-normal hover:bg-primary-dark"
               variant="bg-primary"
             >
@@ -28,11 +31,11 @@ const HeroSection = () => {
           </div>
           <div className="relative">
             <div className="bg-gray-200 rounded-2xl overflow-hidden max-h-80">
-              {/* <img
+              <img
                 src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=600&fit=crop"
                 alt="Team collaboration"
                 className="w-full h-full object-cover"
-              /> */}
+              />
             </div>
           </div>
         </div>
