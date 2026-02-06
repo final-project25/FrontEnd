@@ -14,6 +14,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import api from "../../../services/api";
 import { ClipLoader } from "react-spinners";
+import Footer from "../../layouts/Footer";
 
 const DetailLowonganPublikPage = () => {
   const navigate = useNavigate();
@@ -203,6 +204,7 @@ const DetailLowonganPublikPage = () => {
           )}
         </div>
       </div>
+      <Footer />
     </>
   );
 };

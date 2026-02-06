@@ -1,5 +1,6 @@
 import AboutSection from "../../components/landing/About";
 import HeroSection from "../../components/landing/Hero";
+import Footer from "../../components/layouts/Footer";
 import Navbar from "../../components/layouts/Navbar";
 
 const HomePage = () => {
@@ -8,6 +9,7 @@ const HomePage = () => {
       <Navbar />
       <HeroSection />
       <AboutSection />
+      <Footer />
     </div>
   );
 };

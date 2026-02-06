@@ -7,8 +7,9 @@ import {
   CheckCircle,
   Copy,
   Download,
+  Briefcase, // TAMBAH INI
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react"; // TAMBAH useEffect
 import api from "../../../services/api";
 import { useNavigate, useParams } from "react-router-dom";
 import { showError, succesError } from "../../../utils/notify";
@@ -21,6 +22,7 @@ const CreateLamaranPage = () => {
   const [loading, setLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [kodeLamaran, setKodeLamaran] = useState("");
+  const [loadingLowongan, setLoadingLowongan] = useState(true);
 
   const [formData, setFormData] = useState({
     lowongan_kerja_id: id || "",
@@ -51,6 +53,42 @@ const CreateLamaranPage = () => {
     surat_sehat: null,
     surat_anti_narkoba: null,
   });
+
+  // TAMBAH useEffect INI
+  useEffect(() => {
+    if (id) {
+      fetchLowongan();
+    }
+  }, [id]);
+
+  const fetchLowongan = async () => {
+    try {
+      setLoadingLowongan(true);
+      const response = await api.get(`/lowongan-kerja/${id}`);
+      const lowonganData = response.data.data;
+
+      setFormData((prev) => ({
+        ...prev,
+        posisi_dilamar: lowonganData.posisi || "",
+      }));
+    } catch (error) {
+      console.error("Error fetching lowongan:", error);
+      showError("Gagal mengambil data lowongan");
+    } finally {
+      setLoadingLowongan(false);
+    }
+  };
+
+  const formatPosisi = (posisi) => {
+    const posisiMap = {
+      cleaning_service: "Cleaning Service",
+      supir: "Supir",
+      security: "Security",
+      admin: "Admin",
+      manager: "Manager",
+    };
+    return posisiMap[posisi] || posisi;
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -471,25 +509,32 @@ const CreateLamaranPage = () => {
                     />
                   </div>
 
+                  {/* UBAH BAGIAN INI - DARI SELECT JADI DISPLAY */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Posisi yang Dilamar{" "}
                       <span className="text-red-500">*</span>
                     </label>
-                    <select
+                    {loadingLowongan ? (
+                      <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 flex items-center justify-center">
+                        <ClipLoader color="#0891b2" size={20} />
+                      </div>
+                    ) : (
+                      <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50">
+                        <div className="flex items-center gap-2">
+                          <Briefcase size={18} className="text-cyan-600" />
+                          <span className="font-semibold text-gray-900">
+                            {formatPosisi(formData.posisi_dilamar)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                    {/* Hidden input untuk submit */}
+                    <input
+                      type="hidden"
                       name="posisi_dilamar"
                       value={formData.posisi_dilamar}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                      required
-                    >
-                      <option value="">Pilih posisi</option>
-                      <option value="cleaning_service">Cleaning Service</option>
-                      <option value="supir">Supir</option>
-                      <option value="security">Security</option>
-                      <option value="admin">Admin</option>
-                      <option value="manager">Manager</option>
-                    </select>
+                    />
                   </div>
 
                   <div className="md:col-span-2">
@@ -602,6 +647,7 @@ const CreateLamaranPage = () => {
           </form>
         </div>
       </div>
+      <Footer />
     </>
   );
 };

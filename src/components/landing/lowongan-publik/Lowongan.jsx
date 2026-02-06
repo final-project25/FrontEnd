@@ -16,6 +16,7 @@ import { useEffect, useState } from "react";
 import api from "../../../services/api";
 import { ClipLoader } from "react-spinners";
 import { useNavigate } from "react-router-dom";
+import Footer from "../../layouts/Footer";
 
 const LowonganPublikPage = () => {
   const [lowonganData, setLowonganData] = useState([]);
@@ -497,6 +498,7 @@ const LowonganPublikPage = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </>
   );
 };
