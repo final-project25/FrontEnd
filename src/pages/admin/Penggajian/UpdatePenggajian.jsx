@@ -101,51 +101,6 @@ const UpdatePenggajianPage = () => {
     }
   };
 
-  useEffect(() => {
-    const jumlahHariKerja = parseFloat(formData.jumlah_hari_kerja) || 0;
-    const gajiHarian = parseFloat(formData.gaji_harian) || 0;
-    const lembur = parseFloat(formData.jumlah_lembur) || 0;
-    const thr = parseFloat(formData.uang_thr) || 0;
-    const upah_kotor_karyawan = jumlahHariKerja * gajiHarian + lembur + thr;
-
-    setFormData((prev) => ({
-      ...prev,
-      upah_kotor_karyawan: upah_kotor_karyawan.toString(),
-    }));
-  }, [
-    formData.jumlah_hari_kerja,
-    formData.gaji_harian,
-    formData.jumlah_lembur,
-    formData.uang_thr,
-  ]);
-
-  useEffect(() => {
-    const upahKotor = parseFloat(formData.upah_kotor_karyawan) || 0;
-    const gajiHarian = parseFloat(formData.gaji_harian) || 0;
-    const upahDiterima = upahKotor - gajiHarian;
-
-    setFormData((prev) => ({
-      ...prev,
-      upah_diterima: upahDiterima.toString(),
-    }));
-  }, [formData.upah_kotor_karyawan, formData.gaji_harian]);
-
-  const handleCalculateGajiHarian = () => {
-    const gajiHarian = parseFloat(formData.gaji_harian) || 0;
-    const hariKerja = parseFloat(formData.jumlah_hari_kerja) || 1;
-
-    if (hariKerja > 0) {
-      const totalGaji = gajiHarian * hariKerja;
-      setFormData((prev) => ({
-        ...prev,
-        gaji_harian: totalGaji.toFixed(2),
-      }));
-      succesError("Gaji harian berhasil dihitung");
-    } else {
-      showError("Jumlah hari kerja harus lebih dari 0");
-    }
-  };
-
   const formatCurrency = (value) => {
     if (!value) return "Rp 0";
     return new Intl.NumberFormat("id-ID", {
@@ -391,19 +346,6 @@ const UpdatePenggajianPage = () => {
                     disabled={loading}
                     className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                   />
-                  <button
-                    type="button"
-                    onClick={handleCalculateGajiHarian}
-                    disabled={
-                      loading ||
-                      !formData.jumlah_penghasilan_kotor ||
-                      !formData.jumlah_hari_kerja
-                    }
-                    className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    title="Hitung Gaji Harian"
-                  >
-                    <Calculator size={20} />
-                  </button>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
                   Bisa desimal (contoh: 24.5)
@@ -493,31 +435,6 @@ const UpdatePenggajianPage = () => {
                   disabled={loading}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                 />
-              </div>
-            </div>
-          </div>
-
-          <div className="p-6 border-b border-gray-200 bg-green-50">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Ringkasan Gaji
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white p-4 rounded-lg border-2 border-blue-200">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Upah Kotor Karyawan (Auto)
-                </label>
-                <div className="text-2xl font-bold text-blue-600">
-                  {formatCurrency(formData.upah_kotor_karyawan)}
-                </div>
-              </div>
-
-              <div className="bg-white p-4 rounded-lg border-2 border-green-200">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Upah Diterima (Auto)
-                </label>
-                <div className="text-2xl font-bold text-green-600">
-                  {formatCurrency(formData.upah_diterima)}
-                </div>
               </div>
             </div>
           </div>

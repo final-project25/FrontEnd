@@ -91,72 +91,6 @@ const UpdateTagihanPage = () => {
     }
   };
 
-  useEffect(() => {
-    const bpjsKesehatan = parseFloat(formData.bpjs_kesehatan) || 0;
-    const jkk = parseFloat(formData.jkk) || 0;
-    const jkm = parseFloat(formData.jkm) || 0;
-    const jht = parseFloat(formData.jht) || 0;
-    const jp = parseFloat(formData.jp) || 0;
-    const seragamCsDanKeamanan =
-      parseFloat(formData.seragam_cs_dan_keamanan) || 0;
-    const feeManajemen = parseFloat(formData.fee_manajemen) || 0;
-    const totalBpjs =
-      bpjsKesehatan +
-      jkk +
-      jkm +
-      jht +
-      jp +
-      seragamCsDanKeamanan +
-      feeManajemen;
-
-    setFormData((prev) => ({
-      ...prev,
-      jumlah_iuran_bpjs: totalBpjs.toString(),
-    }));
-  }, [
-    formData.bpjs_kesehatan,
-    formData.jkk,
-    formData.jkm,
-    formData.jht,
-    formData.jp,
-    formData.seragam_cs_dan_keamanan,
-    formData.fee_manajemen,
-  ]);
-
-  useEffect(() => {
-    const hariKerja = parseFloat(formData.jumlah_hari_kerja) || 0;
-    const gajiHarian = parseFloat(formData.gaji_harian) || 0;
-    const lembur = parseFloat(formData.lembur) || 0;
-    const thr = parseFloat(formData.thr) || 0;
-    const upahDiterima = hariKerja * gajiHarian - gajiHarian + lembur + thr;
-
-    setFormData((prev) => ({
-      ...prev,
-      upa_yang_diterima_pekerja: upahDiterima.toString(),
-    }));
-  }, [
-    formData.jumlah_hari_kerja,
-    formData.gaji_harian,
-    formData.lembur,
-    formData.thr,
-  ]);
-
-  useEffect(() => {
-    const hariKerja = parseFloat(formData.jumlah_hari_kerja) || 0;
-    const gajiHarian = parseFloat(formData.gaji_harian) || 0;
-    const totalBpjs = parseFloat(formData.jumlah_iuran_bpjs) || 0;
-    const totalDiterima = hariKerja * gajiHarian + totalBpjs;
-
-    setFormData((prev) => ({
-      ...prev,
-      total_diterima: totalDiterima.toString(),
-    }));
-  }, [
-    formData.jumlah_hari_kerja,
-    formData.gaji_harian,
-    formData.jumlah_iuran_bpjs,
-  ]);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -196,9 +130,6 @@ const UpdateTagihanPage = () => {
         jumlah_hari_kerja: parseFloat(formData.jumlah_hari_kerja),
         gaji_harian: parseFloat(formData.gaji_harian),
         lembur: parseFloat(formData.lembur) || 0,
-        upa_yang_diterima_pekerja:
-          parseFloat(formData.upa_yang_diterima_pekerja) || 0,
-        total_diterima: parseFloat(formData.total_diterima) || 0,
       };
 
       setLoading(true);
@@ -602,38 +533,6 @@ const UpdateTagihanPage = () => {
                   disabled={loading}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                 />
-              </div>
-            </div>
-          </div>
-
-          {/* Summary */}
-          <div className="p-6 bg-linear-to-r from-green-50 to-blue-50">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Ringkasan Tagihan
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white p-4 rounded-lg border-2 border-orange-200 shadow">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Upah Diterima Pekerja (Auto)
-                </label>
-                <div className="text-2xl font-bold text-orange-600">
-                  {formatCurrency(formData.upa_yang_diterima_pekerja)}
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Upa Pekerja - Total BPJS - Seragam
-                </p>
-              </div>
-
-              <div className="bg-white p-4 rounded-lg border-2 border-green-300 shadow">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Total Diterima (Auto)
-                </label>
-                <div className="text-2xl font-bold text-green-600">
-                  {formatCurrency(formData.total_diterima)}
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Upah Diterima + Fee Manajemen
-                </p>
               </div>
             </div>
           </div>
