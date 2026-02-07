@@ -153,9 +153,9 @@ const CreateKaryawanPage = () => {
                   <option value="">Pilih posisi</option>
                   <option value="cleaning_service">Cleaning Service</option>
                   <option value="supir">Supir</option>
-                  <option value="security">Security</option>
-                  <option value="admin">Admin</option>
-                  <option value="manager">Manager</option>
+                  <option value="security">Keamanan</option>
+                  <option value="admin">Jasa</option>
+                  <option value="manager">Operator</option>
                 </select>
               </div>
 
