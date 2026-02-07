@@ -21,13 +21,12 @@ const HeroSection = () => {
               Mewujudkan masa depan <br />
               cerah dan terarah
             </p>
-            <Button
+            <button
               onClick={() => navigate("/lowongan-publik")}
-              className="text-xl font-normal hover:bg-primary-dark"
-              variant="bg-primary"
+              className="text-xl font-normal hover:bg-primary-dark bg-primary text-white px-6 py-3 rounded-2xl"
             >
               Cek Lowongan →
-            </Button>
+            </button>
           </div>
           <div className="relative">
             <div className="bg-gray-200 rounded-2xl overflow-hidden max-h-80">
