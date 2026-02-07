@@ -196,9 +196,9 @@ const UpdateKaryawanPage = () => {
                   <option value="">Pilih posisi</option>
                   <option value="cleaning_service">Cleaning Service</option>
                   <option value="supir">Supir</option>
-                  <option value="security">Keamanan</option>
-                  <option value="admin">Jasa</option>
-                  <option value="manager">Operator</option>
+                  <option value="keamanan">Keamanan</option>
+                  <option value="jasa">Jasa</option>
+                  <option value="operator">Operator</option>
                 </select>
               </div>
 
