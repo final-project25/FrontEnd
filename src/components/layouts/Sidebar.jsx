@@ -22,8 +22,8 @@ const Sidebar = () => {
     { icon: Home, label: "Dashboard", path: "/dashboard" },
     { icon: Users, label: "Karyawan", path: "/karyawan" },
     { icon: Banknote, label: "Tagihan", path: "/tagihan" },
-    { icon: DollarSign, label: "Gaji", path: "/penggajian" },
-    { icon: UserPlus, label: "Rekrut", path: "/rekrutmen" },
+    { icon: DollarSign, label: "Penggajian", path: "/penggajian" },
+    { icon: UserPlus, label: "Rekrutmen", path: "/rekrutmen" },
     { icon: Contact, label: "Kontak", path: "/admin/kontak" },
   ];
 

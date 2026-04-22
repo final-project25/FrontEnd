@@ -87,7 +87,11 @@ const DetailPenggajianPage = () => {
   return (
     <div>
       <div className="mb-6">
-        <button className="flex items-center gap-2 text-cyan-600 hover:text-cyan-700 mb-4">
+        <button
+          type="button"
+          onClick={() => navigate("/penggajian")}
+          className="flex items-center gap-2 text-cyan-600 hover:text-cyan-700 mb-4"
+        >
           <ArrowLeft size={20} />
           <span>Kembali ke Data Penggajian</span>
         </button>
@@ -102,20 +106,17 @@ const DetailPenggajianPage = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
-              <FileText size={18} />
-              <span>Cetak Slip</span>
-            </button>
+          <div className="flex flex-wrap items-center gap-2">
+            
             <button
               onClick={() => navigate(`/update-penggajian/${id}`)}
-              className="flex items-center gap-2 bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors"
+              className="flex items-center gap-2 bg-yellow-500 text-white px-3 py-2 rounded-lg hover:bg-yellow-600 transition-colors text-sm"
             >
-              <Edit size={18} />
+              <Edit size={16} />
               <span>Edit</span>
             </button>
-            <button className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
-              <Trash2 size={18} />
+            <button className="flex items-center gap-2 bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm">
+              <Trash2 size={16} />
               <span>Hapus</span>
             </button>
           </div>
@@ -227,7 +228,7 @@ const DetailPenggajianPage = () => {
                   {formatDate(penggajian.periode_awal)}
                 </p>
               </div>
-              \{" "}
+              {" "}
               <div>
                 <label className="block text-sm font-medium text-gray-500 mb-1">
                   Periode Akhir

@@ -16,7 +16,7 @@ import { useNavigate, useParams } from "react-router-dom";
 const DetailKaryawanPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const [karyawan, setKaryawan] = useState([]);
+  const [karyawan, setKaryawan] = useState({});
 
   // Fetch data karyawan
   useEffect(() => {
@@ -61,6 +61,7 @@ const DetailKaryawanPage = () => {
     };
     return posisiMap[posisi] || posisi;
   };
+  const isActive = karyawan.status_aktif;
 
   return (
     <div>
@@ -97,11 +98,15 @@ const DetailKaryawanPage = () => {
         </div>
       </div>
 
-      <div className="mb-6">
+       <div className="mb-6">
         <span
-          className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold ${karyawan.status_aktif === 1 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
+          className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold ${
+            isActive
+              ? "bg-green-100 text-green-800"
+              : "bg-red-100 text-red-800"
+          }`}
         >
-          {karyawan.status_aktif === 1 ? "● Karyawan Aktif" : "● Tidak Aktif"}
+          {isActive ? "● Aktif" : "● Tidak Aktif"}
         </span>
       </div>
 
@@ -234,10 +239,14 @@ const DetailKaryawanPage = () => {
                   Status Kepegawaian
                 </label>
                 <span
-                  className={`inline-flex px-3 py-1 rounded-full text-sm font-semibold ${karyawan.status_aktif === 1 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
-                >
-                  {karyawan.status_aktif === 1 ? "Aktif" : "Tidak Aktif"}
-                </span>
+                className={`inline-flex px-3 py-1 rounded-full text-sm font-semibold ${
+                  isActive
+                    ? "bg-green-100 text-green-800"
+                    : "bg-red-100 text-red-800"
+                }`}
+              >
+                {isActive ? "Aktif" : "Tidak Aktif"}
+              </span>
               </div>
             </div>
           </div>

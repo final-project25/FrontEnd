@@ -1,18 +1,49 @@
-import {
-  Search,
-  Plus,
-  Eye,
-  Edit,
-  Trash2,
-  FileText,
-  Download,
-  Send,
-} from "lucide-react";
+import { Search, Plus, Eye, Edit, Trash2, Download, Send } from "lucide-react";
 import { useEffect, useState } from "react";
 import api from "../../../services/api";
 import { useNavigate } from "react-router-dom";
 import { ClipLoader } from "react-spinners";
 import { showError, succesError } from "../../../utils/notify";
+
+const getNamaBulan = (bulan) => {
+  const namaBulan = [
+    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+    "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+  ];
+  return namaBulan[bulan - 1];
+};
+
+const generateYears = () => {
+  const current = new Date().getFullYear();
+  return Array.from({ length: 7 }, (_, i) => current - 5 + i);
+};
+
+const formatMonthYear = (dateString) => {
+  if (!dateString) return "-";
+  return new Date(dateString).toLocaleDateString("id-ID", {
+    month: "long",
+    year: "numeric",
+  });
+};
+
+const formatCurrency = (amount) => {
+  if (!amount) return "Rp 0";
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
+
+const INITIAL_PAGINATION = {
+  current_page: 1,
+  last_page: 1,
+  total: 0,
+  per_page: 15,
+  from: 0,
+  to: 0,
+};
 
 const PenggajianPage = () => {
   const navigate = useNavigate();
@@ -20,65 +51,70 @@ const PenggajianPage = () => {
   const [loading, setLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
   const [slipGajiKaryawan, setSlipGajiKaryawan] = useState({});
+  const [pagination, setPagination] = useState(INITIAL_PAGINATION);
   const [filterTahun, setFilterTahun] = useState(new Date().getFullYear());
   const [filterBulan, setFilterBulan] = useState(new Date().getMonth() + 1);
 
   useEffect(() => {
-    const fetchPenggajian = async () => {
-      try {
-        setLoading(true);
-        const response = await api.get("/penggajian");
-        setPenggajian(response.data.data.data);
-      } catch (error) {
-        console.log(error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPenggajian();
+    fetchPenggajian(1);
   }, []);
 
+  const fetchPenggajian = async (page = 1) => {
+    try {
+      setLoading(true);
+      const response = await api.get(`/penggajian?page=${page}`);
+      const data = response.data.data;
+
+      setPenggajian(data.data);
+      setPagination({
+        current_page: data.current_page,
+        last_page: data.last_page,
+        total: data.total,
+        per_page: data.per_page,
+        from: data.from,
+        to: data.to,
+      });
+    } catch (error) {
+      console.error(error);
+      showError("Gagal memuat data penggajian");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePageChange = (page) => {
+    if (page < 1 || page > pagination.last_page) return;
+    fetchPenggajian(page);
+  };
+
   const handleDelete = async (id) => {
-    const confirmDelete = window.confirm(
-      "Apakah Anda yakin ingin menghapus data penggajian ini?",
-    );
-
-    if (!confirmDelete) return;
-
+    if (!window.confirm("Apakah Anda yakin ingin menghapus data penggajian ini?")) return;
     try {
       await api.delete(`/penggajian/${id}`);
-      setPenggajian((prev) => prev.filter((item) => item.id !== id));
-      alert("Data penggajian berhasil dihapus");
+      succesError("Data penggajian berhasil dihapus");
+      fetchPenggajian(pagination.current_page);
     } catch (error) {
-      console.log(error);
-      alert(error.response?.data?.message || "Gagal menghapus data");
+      console.error(error);
+      showError(error.response?.data?.message || "Gagal menghapus data");
     }
   };
 
   const handleSendWhatsApp = async (id, namaKaryawan) => {
-    const confirmSend = window.confirm(
-      `Kirim slip gaji ke WhatsApp ${namaKaryawan}?`,
-    );
-
-    if (!confirmSend) return;
-
+    if (!window.confirm(`Kirim slip gaji ke WhatsApp ${namaKaryawan}?`)) return;
     try {
       setSlipGajiKaryawan((prev) => ({ ...prev, [id]: true }));
       const response = await api.get(`/penggajian/${id}/send-whatsapp`);
       const { whatsapp_url, karyawan, no_wa } = response.data.data;
       window.open(whatsapp_url, "_blank");
-
       succesError(`Slip gaji ${karyawan} siap dikirim ke ${no_wa}`);
     } catch (error) {
-      console.log(error);
+      console.error(error);
       showError(error.response?.data?.message || "Gagal generate URL WhatsApp");
     } finally {
-      // Remove loading untuk item ini
       setSlipGajiKaryawan((prev) => {
-        const newState = { ...prev };
-        delete newState[id];
-        return newState;
+        const next = { ...prev };
+        delete next[id];
+        return next;
       });
     }
   };
@@ -86,120 +122,54 @@ const PenggajianPage = () => {
   const handleExportExcel = async () => {
     try {
       setExportLoading(true);
-
-      console.log("Exporting Excel...");
-      console.log("Tahun:", filterTahun);
-      console.log("Bulan:", filterBulan);
-
       const response = await api.get(
         `/penggajian/excel?tahun=${filterTahun}&bulan=${filterBulan}`,
-        {
-          responseType: "blob",
-        },
+        { responseType: "blob" },
       );
-
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
-      link.href = url;
-
       const fileName = `Penggajian_${getNamaBulan(filterBulan)}_${filterTahun}.xlsx`;
+      link.href = url;
       link.setAttribute("download", fileName);
-
       document.body.appendChild(link);
       link.click();
-
       link.parentNode.removeChild(link);
       window.URL.revokeObjectURL(url);
-
       succesError(`File ${fileName} berhasil didownload!`);
     } catch (error) {
-      console.log(error);
+      console.error(error);
       showError(
         error.response?.data?.message ||
-          "Gagal mengexport data. Pastikan ada data penggajian untuk periode yang dipilih.",
+        "Gagal mengexport data. Pastikan ada data penggajian untuk periode yang dipilih.",
       );
     } finally {
       setExportLoading(false);
     }
   };
 
-  const getNamaBulan = (bulan) => {
-    const namaBulan = [
-      "Januari",
-      "Februari",
-      "Maret",
-      "April",
-      "Mei",
-      "Juni",
-      "Juli",
-      "Agustus",
-      "September",
-      "Oktober",
-      "November",
-      "Desember",
-    ];
-    return namaBulan[bulan - 1];
-  };
-
-  const generateYears = () => {
-    const currentYear = new Date().getFullYear();
-    const years = [];
-    for (let i = currentYear - 5; i <= currentYear + 1; i++) {
-      years.push(i);
-    }
-    return years;
-  };
-
-  const pagination = {
-    current_page: 1,
-    last_page: 3,
-    total: 45,
-    per_page: 15,
-  };
-
-  const formatMonthYear = (dateString) => {
-    if (!dateString) return "-";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("id-ID", {
-      month: "long",
-      year: "numeric",
-    });
-  };
-
-  const formatCurrency = (amount) => {
-    if (!amount) return "Rp 0";
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
+  const pageNumbers = Array.from(
+    { length: pagination.last_page },
+    (_, i) => i + 1,
+  );
 
   return (
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Data Penggajian</h1>
-        <p className="text-gray-600 mt-1">
-          Kelola data penggajian karyawan perusahaan
-        </p>
+        <p className="text-gray-600 mt-1">Kelola data penggajian karyawan perusahaan</p>
       </div>
 
       <div className="bg-white rounded-lg shadow p-4 mb-6">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="relative flex-1 max-w-md">
-              <Search
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                size={20}
-              />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
               <input
                 type="text"
                 placeholder="Cari nama, nomor induk, atau NIK..."
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
               />
             </div>
-
             <button
               onClick={() => navigate("/create-penggajian")}
               className="flex items-center gap-2 bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-700 transition-colors"
@@ -211,12 +181,7 @@ const PenggajianPage = () => {
 
           <div className="border-t border-gray-200 pt-4">
             <div className="flex flex-col md:flex-row md:items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-700">
-                  Export Excel:
-                </span>
-              </div>
-
+              <span className="text-sm font-medium text-gray-700">Export Excel:</span>
               <div className="flex items-center gap-2">
                 <label className="text-sm text-gray-600">Bulan:</label>
                 <select
@@ -224,21 +189,11 @@ const PenggajianPage = () => {
                   onChange={(e) => setFilterBulan(parseInt(e.target.value))}
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                 >
-                  <option value={1}>Januari</option>
-                  <option value={2}>Februari</option>
-                  <option value={3}>Maret</option>
-                  <option value={4}>April</option>
-                  <option value={5}>Mei</option>
-                  <option value={6}>Juni</option>
-                  <option value={7}>Juli</option>
-                  <option value={8}>Agustus</option>
-                  <option value={9}>September</option>
-                  <option value={10}>Oktober</option>
-                  <option value={11}>November</option>
-                  <option value={12}>Desember</option>
+                  {Array.from({ length: 12 }, (_, i) => (
+                    <option key={i + 1} value={i + 1}>{getNamaBulan(i + 1)}</option>
+                  ))}
                 </select>
               </div>
-
               <div className="flex items-center gap-2">
                 <label className="text-sm text-gray-600">Tahun:</label>
                 <select
@@ -247,13 +202,10 @@ const PenggajianPage = () => {
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                 >
                   {generateYears().map((year) => (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
+                    <option key={year} value={year}>{year}</option>
                   ))}
                 </select>
               </div>
-
               <button
                 onClick={handleExportExcel}
                 disabled={exportLoading}
@@ -271,7 +223,6 @@ const PenggajianPage = () => {
                   </>
                 )}
               </button>
-
               <span className="text-sm text-gray-500">
                 Export data: {getNamaBulan(filterBulan)} {filterTahun}
               </span>
@@ -285,33 +236,11 @@ const PenggajianPage = () => {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  No
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Nama
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Posisi
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Periode
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Hari Kerja
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Gaji Kotor
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Upah Diterima
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Aksi
-                </th>
+                {["No", "Nama", "Posisi", "Periode", "Hari Kerja", "Gaji Kotor", "Upah Diterima", "Status", "Aksi"].map((h) => (
+                  <th key={h} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -319,17 +248,14 @@ const PenggajianPage = () => {
                 <tr>
                   <td colSpan="9" className="px-6 py-8">
                     <div className="flex items-center justify-center gap-2">
-                      <ClipLoader color="grey" loading={true} size={20} />
+                      <ClipLoader color="grey" size={20} />
                       <span className="text-gray-600">Memuat data...</span>
                     </div>
                   </td>
                 </tr>
               ) : penggajian.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan="9"
-                    className="px-6 py-8 text-center text-gray-500"
-                  >
+                  <td colSpan="9" className="px-6 py-8 text-center text-gray-500">
                     Tidak ada data penggajian
                   </td>
                 </tr>
@@ -337,44 +263,22 @@ const PenggajianPage = () => {
                 penggajian.map((p, index) => (
                   <tr key={p.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {index + 1}
+                      {(pagination.current_page - 1) * pagination.per_page + index + 1}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {p.nama}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {p.posisi}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatMonthYear(p.gajian_bulan)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {p.jumlah_hari_kerja} hari
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                      {formatCurrency(p.upah_kotor_karyawan)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-semibold">
-                      {formatCurrency(p.upah_diterima)}
-                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{p.nama}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{p.posisi}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatMonthYear(p.gajian_bulan)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{p.jumlah_hari_kerja} hari</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{formatCurrency(p.upah_kotor_karyawan)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-semibold">{formatCurrency(p.upah_diterima)}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          p.status_penggajian
-                            ? "bg-green-100 text-green-800"
-                            : "bg-yellow-100 text-yellow-800"
-                        }`}
-                      >
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${p.status_penggajian ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}>
                         {p.status_penggajian ? "Selesai" : "Pending"}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => navigate(`/detail-penggajian/${p.id}`)}
-                          className="text-blue-600 hover:text-blue-800"
-                          title="Lihat Detail"
-                        >
+                        <button onClick={() => navigate(`/detail-penggajian/${p.id}`)} className="text-blue-600 hover:text-blue-800" title="Lihat Detail">
                           <Eye size={18} />
                         </button>
                         <button
@@ -383,24 +287,12 @@ const PenggajianPage = () => {
                           className="text-green-600 hover:text-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Kirim Slip Gaji via WhatsApp"
                         >
-                          {slipGajiKaryawan[p.id] ? (
-                            <ClipLoader color="#16a34a" size={16} />
-                          ) : (
-                            <Send size={18} />
-                          )}
+                          {slipGajiKaryawan[p.id] ? <ClipLoader color="#16a34a" size={16} /> : <Send size={18} />}
                         </button>
-                        <button
-                          onClick={() => navigate(`/update-penggajian/${p.id}`)}
-                          className="text-yellow-600 hover:text-yellow-800"
-                          title="Edit"
-                        >
+                        <button onClick={() => navigate(`/update-penggajian/${p.id}`)} className="text-yellow-600 hover:text-yellow-800" title="Edit">
                           <Edit size={18} />
                         </button>
-                        <button
-                          onClick={() => handleDelete(p.id)}
-                          className="text-red-600 hover:text-red-800"
-                          title="Hapus"
-                        >
+                        <button onClick={() => handleDelete(p.id)} className="text-red-600 hover:text-red-800" title="Hapus">
                           <Trash2 size={18} />
                         </button>
                       </div>
@@ -414,34 +306,43 @@ const PenggajianPage = () => {
       </div>
 
       <div className="mt-4 flex items-center justify-between">
-        <div className="text-sm text-gray-600">
-          Menampilkan 1 - 15 dari {pagination.total} data penggajian
-        </div>
+        <p className="text-sm text-gray-600">
+          Menampilkan {pagination.from}–{pagination.to} dari {pagination.total} data
+        </p>
 
-        <div className="flex items-center gap-2">
-          <button
-            disabled
-            className="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Previous
-          </button>
-
-          <div className="flex items-center gap-1">
-            <button className="px-3 py-1 border rounded-lg text-sm bg-cyan-600 text-white border-cyan-600">
-              1
+        {pagination.last_page > 1 && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handlePageChange(pagination.current_page - 1)}
+              disabled={pagination.current_page === 1}
+              className="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
             </button>
-            <button className="px-3 py-1 border rounded-lg text-sm border-gray-300 hover:bg-gray-50">
-              2
-            </button>
-            <button className="px-3 py-1 border rounded-lg text-sm border-gray-300 hover:bg-gray-50">
-              3
+            <div className="flex items-center gap-1">
+              {pageNumbers.map((page) => (
+                <button
+                  key={page}
+                  onClick={() => handlePageChange(page)}
+                  className={`px-3 py-1 border rounded-lg text-sm ${
+                    page === pagination.current_page
+                      ? "bg-cyan-600 text-white border-cyan-600"
+                      : "border-gray-300 hover:bg-gray-50"
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => handlePageChange(pagination.current_page + 1)}
+              disabled={pagination.current_page === pagination.last_page}
+              className="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
             </button>
           </div>
-
-          <button className="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
-            Next
-          </button>
-        </div>
+        )}
       </div>
     </div>
   );
