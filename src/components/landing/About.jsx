@@ -105,9 +105,9 @@ const AboutSection = () => {
           >
             Tentang Kami
           </h2>{" "}
-          <div className="flex flex-col md:flex-row items-start gap-16">
+          <div className="flex flex-col md:flex-row items-start gap-8 md:gap-16">
             <div
-              className={`flex gap-6 transition-all duration-700 delay-200 ${
+              className={`grid grid-cols-2 gap-2 md:flex md:gap-6 w-full md:w-auto flex-shrink-0 transition-all duration-700 delay-200 ${
                 aboutVisible
                   ? "opacity-100 translate-x-0"
                   : "opacity-0 -translate-x-20"
@@ -116,16 +116,16 @@ const AboutSection = () => {
               <img
                 src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=600"
                 alt="Office"
-                className="w-55 h-75 object-cover rounded-3xl shadow-xl hover:scale-105 transition-transform duration-300"
+                className="w-full md:w-52 h-48 sm:h-60 md:h-72 object-cover rounded-2xl md:rounded-3xl shadow-xl hover:scale-105 transition-transform duration-300"
               />
               <img
                 src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=600"
                 alt="Meeting"
-                className="w-55 h-75 object-cover rounded-3xl shadow-xl mt-16 hover:scale-105 transition-transform duration-300"
+                className="w-full md:w-52 h-48 sm:h-60 md:h-72 object-cover rounded-2xl md:rounded-3xl shadow-xl mt-8 md:mt-16 hover:scale-105 transition-transform duration-300"
               />
             </div>
             <p
-              className={`max-w-xl leading-relaxed text-lg text-justify transition-all duration-700 delay-300 ${
+              className={`w-full md:max-w-xl leading-relaxed text-lg text-justify transition-all duration-700 delay-300 ${
                 aboutVisible
                   ? "opacity-100 translate-x-0"
                   : "opacity-0 translate-x-20"
@@ -324,7 +324,8 @@ const AboutSection = () => {
             Fasilitas dan keuntungan yang kami berikan untuk setiap pekerja
           </p>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+            {" "}
             {benefits.map((benefit, index) => (
               <div
                 key={index}

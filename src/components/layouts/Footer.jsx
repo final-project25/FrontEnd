@@ -53,23 +53,35 @@ const Footer = () => {
           </div>
 
           <div
-            className={`flex flex-col items-center transition-all duration-700 ${
+            className={`flex flex-col items-start md:items-center transition-all duration-700 ${
               footerVisible ? "opacity-100 scale-100" : "opacity-0 scale-75"
             }`}
             style={{ transitionDelay: footerVisible ? "400ms" : "0ms" }}
           >
-            <h3 className="text-xl font-semibold mb-4 text-center min-h-7">
+            <h3 className="text-xl font-semibold mb-4 md:text-center min-h-7">
               Terhubung Dengan Kami
             </h3>
 
-            <div className="flex items-center justify-center gap-14">
-              <a className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 hover:scale-125 transition-all duration-300 hover:rotate-12">
+            <div className="flex items-center justify-start md:justify-center gap-6">
+              <a
+                href="#"
+                aria-label="Facebook"
+                className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 hover:scale-125 transition-all duration-300 hover:rotate-12"
+              >
                 <Facebook size={20} />
               </a>
-              <a className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 hover:scale-125 transition-all duration-300 hover:rotate-12">
+              <a
+                href="#"
+                aria-label="Instagram"
+                className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 hover:scale-125 transition-all duration-300 hover:rotate-12"
+              >
                 <Instagram size={20} />
               </a>
-              <a className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 hover:scale-125 transition-all duration-300 hover:rotate-12">
+              <a
+                href="#"
+                aria-label="TikTok"
+                className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 hover:scale-125 transition-all duration-300 hover:rotate-12"
+              >
                 {/* TikTok */}
                 <svg
                   viewBox="0 0 24 24"

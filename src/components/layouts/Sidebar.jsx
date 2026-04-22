@@ -22,8 +22,8 @@ const Sidebar = () => {
     { icon: Home, label: "Dashboard", path: "/dashboard" },
     { icon: Users, label: "Karyawan", path: "/karyawan" },
     { icon: Banknote, label: "Tagihan", path: "/tagihan" },
-    { icon: DollarSign, label: "Penggajian", path: "/penggajian" },
-    { icon: UserPlus, label: "Rekrutmen", path: "/rekrutmen" },
+    { icon: DollarSign, label: "Gaji", path: "/penggajian" },
+    { icon: UserPlus, label: "Rekrut", path: "/rekrutmen" },
     { icon: Contact, label: "Kontak", path: "/admin/kontak" },
   ];
 
@@ -31,8 +31,7 @@ const Sidebar = () => {
     const userStr = localStorage.getItem("user");
     if (userStr) {
       try {
-        const userData = JSON.parse(userStr);
-        setUser(userData);
+        setUser(JSON.parse(userStr));
       } catch (error) {
         console.error("Error parsing user:", error);
       }
@@ -40,7 +39,7 @@ const Sidebar = () => {
   }, []);
 
   const handleLogout = async () => {
-    const confirmLogout = window.confirm("Apakah Anda yakin ingin keluar?");
+    const confirmLogout = window.confirm("Yakin logout?");
     if (!confirmLogout) return;
 
     setIsLoggingOut(true);
@@ -52,25 +51,14 @@ const Sidebar = () => {
       localStorage.removeItem("user");
 
       succesError("Logout berhasil");
-
-      setTimeout(() => {
-        navigate("/login");
-      }, 1000);
+      navigate("/login");
     } catch (error) {
       console.error("Logout error:", error);
-
       localStorage.removeItem("token");
       localStorage.removeItem("user");
 
-      if (error.response?.status === 401) {
-        showError("Session telah berakhir");
-      } else {
-        showError("Terjadi kesalahan saat logout");
-      }
-
-      setTimeout(() => {
-        navigate("/login");
-      }, 1500);
+      showError("Session habis / error logout");
+      navigate("/login");
     } finally {
       setIsLoggingOut(false);
     }
@@ -78,73 +66,88 @@ const Sidebar = () => {
 
   const getInitials = (name) => {
     if (!name) return "U";
-
-    const nameParts = name.trim().split(" ");
-    if (nameParts.length >= 2) {
-      return (nameParts[0][0] + nameParts[1][0]).toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
+    const parts = name.split(" ");
+    return parts.length > 1
+      ? (parts[0][0] + parts[1][0]).toUpperCase()
+      : name.substring(0, 2).toUpperCase();
   };
 
   return (
-    <aside className="w-64 h-screen bg-linear-to-b from-cyan-600 to-cyan-700 text-white flex flex-col shadow-xl">
-      <div className="p-6 border-b border-cyan-500">
-        <h1 className="text-xl font-bold">Manajemen SDM</h1>
-        <p className="text-sm text-cyan-100 mt-1">Admin Panel</p>
-      </div>
-
-      <nav className="flex-1 py-6">
-        <ul className="space-y-2 px-3">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <li key={item.path}>
-                <NavLink
-                  to={item.path}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                      isActive
-                        ? "bg-white text-cyan-700 shadow-md"
-                        : "hover:bg-cyan-600 text-white"
-                    }`
-                  }
-                >
-                  <Icon size={20} />
-                  <span className="font-medium">{item.label}</span>
-                </NavLink>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
-
-      <div className="p-4 border-t border-cyan-500">
-        <div className="flex items-center justify-between px-2 py-2 rounded-lg hover:bg-cyan-600 transition-colors">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-white text-cyan-700 flex items-center justify-center font-semibold">
-              {user ? getInitials(user.name) : "U"}
-            </div>
-            <div>
-              <p className="text-sm font-medium">{user?.name || "User"}</p>
-              <p className="text-xs text-cyan-100">Administrator</p>
-            </div>
-          </div>
-
-          <button
-            onClick={handleLogout}
-            disabled={isLoggingOut}
-            className="hover:scale-110 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Logout"
-          >
-            {isLoggingOut ? (
-              <ClipLoader color="white" size={18} />
-            ) : (
-              <LogOut size={18} />
-            )}
-          </button>
+    <>
+      <aside className="hidden md:flex w-64 h-screen bg-gradient-to-b from-cyan-600 to-cyan-700 text-white flex-col fixed">
+        <div className="p-6 border-b border-cyan-500">
+          <h1 className="text-xl font-bold">Manajemen SDM</h1>
+          <p className="text-sm text-cyan-100">Admin Panel</p>
         </div>
+
+        <nav className="flex-1 py-6">
+          <ul className="space-y-2 px-3">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <li key={item.path}>
+                  <NavLink
+                    to={item.path}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-4 py-3 rounded-lg ${
+                        isActive
+                          ? "bg-white text-cyan-700"
+                          : "hover:bg-cyan-600"
+                      }`
+                    }
+                  >
+                    <Icon size={20} />
+                    {item.label}
+                  </NavLink>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+        <div className="p-4 border-t border-cyan-500">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-white text-cyan-700 flex items-center justify-center font-bold">
+                {getInitials(user?.name)}
+              </div>
+              <div>
+                <p className="text-sm">{user?.name || "User"}</p>
+                <p className="text-xs text-cyan-100">Admin</p>
+              </div>
+            </div>
+
+            <button onClick={handleLogout}>
+              {isLoggingOut ? (
+                <ClipLoader size={18} color="white" />
+              ) : (
+                <LogOut size={18} />
+              )}
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t flex justify-around py-2 md:hidden z-50">
+        {menuItems.slice(0, 5).map((item) => {
+          const Icon = item.icon;
+          return (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              className={({ isActive }) =>
+                `flex flex-col items-center text-xs ${
+                  isActive ? "text-cyan-600" : "text-gray-500"
+                }`
+              }
+            >
+              <Icon size={22} />
+              <span>{item.label}</span>
+            </NavLink>
+          );
+        })}
       </div>
-    </aside>
+    </>
   );
 };
 

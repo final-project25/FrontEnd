@@ -1,27 +1,26 @@
 import { toast } from "react-toastify";
 
+const baseConfig = {
+  position: "top-right",
+  hideProgressBar: false,
+  closeOnClick: true,
+  pauseOnHover: true,
+  draggable: true,
+  theme: "colored",
+};
+
+// Untuk error server/network — masih pakai toast, tapi durasi lebih lama
 export const showError = (message) => {
   toast.error(message, {
-    position: "top-right",
-    autoClose: 1000,
-    hideProgressBar: false,
-    closeOnClick: false,
-    pauseOnHover: true,
-    draggable: true,
-    progress: undefined,
-    theme: "colored",
+    ...baseConfig,
+    autoClose: 4000, // ← dari 1000 jadi 4000 (4 detik)
   });
 };
 
+// Untuk sukses login
 export const succesError = (message) => {
   toast.success(message, {
-    position: "top-right",
-    autoClose: 1000,
-    hideProgressBar: false,
-    closeOnClick: false,
-    pauseOnHover: true,
-    draggable: true,
-    progress: undefined,
-    theme: "colored",
+    ...baseConfig,
+    autoClose: 3000,
   });
 };

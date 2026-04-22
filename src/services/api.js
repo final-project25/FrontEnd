@@ -17,18 +17,23 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  },
+  (error) => Promise.reject(error),
 );
 
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      window.location.href = "/login";
+      const token = localStorage.getItem("token");
+      const isLoginRequest = error.config?.url?.includes("/login");
+
+      // Hanya redirect jika bukan dari halaman login
+      // dan user sebelumnya sudah punya token (sesi expired)
+      if (token && !isLoginRequest) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "/login";
+      }
     }
     return Promise.reject(error);
   },

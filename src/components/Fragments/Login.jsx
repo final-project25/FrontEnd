@@ -2,30 +2,60 @@ import { useState } from "react";
 import Button from "../Elements/Button";
 import InputForm from "../Elements/Input";
 import api from "../../services/api";
-import { showError, succesError } from "../../utils/notify";
+import { succesError } from "../../utils/notify";
 import { ClipLoader } from "react-spinners";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+
+const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 const FormLogin = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+
+  const [formData, setFormData]     = useState({ email: "", password: "" });
+  const [fieldErrors, setFieldErrors] = useState({ email: "", password: "" });
+  const [authError, setAuthError]   = useState("");
+  const [loading, setLoading]       = useState(false);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFieldErrors((prev) => ({ ...prev, [name]: "" }));
+  };
+
+  const validate = () => {
+    const errors = { email: "", password: "" };
+    let isValid = true;
+
+    if (!formData.email.trim()) {
+      errors.email = "Email tidak boleh kosong";
+      isValid = false;
+    } else if (!isValidEmail(formData.email)) {
+      errors.email = "Format email tidak valid";
+      isValid = false;
+    }
+
+    if (!formData.password.trim()) {
+      errors.password = "Password tidak boleh kosong";
+      isValid = false;
+    } else if (formData.password.length < 8) {
+      errors.password = "Password minimal 8 karakter";
+      isValid = false;
+    }
+
+    setFieldErrors(errors);
+    return isValid;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    if (!validate()) return;
 
-    if (!email.trim() || !password.trim()) {
-      showError("Email dan password harus diisi");
-      setLoading(false);
-      return;
-    }
+    setLoading(true);
 
     try {
       const res = await api.post("/login", {
-        email,
-        password,
+        email: formData.email,
+        password: formData.password,
       });
 
       const { token, user } = res.data;
@@ -34,35 +64,36 @@ const FormLogin = () => {
         localStorage.setItem("token", token);
         localStorage.setItem("user", JSON.stringify(user));
 
+        setAuthError("");
         succesError(res.data.message || "Login berhasil");
+        setFormData({ email: "", password: "" });
 
-        setEmail("");
-        setPassword("");
-        setTimeout(() => {
-          navigate("/dashboard");
-        }, 1000);
+        setTimeout(() => navigate("/dashboard"), 1000);
       } else {
-        showError("Token tidak ditemukan");
+        setAuthError("Token tidak ditemukan, coba lagi.");
       }
     } catch (error) {
       console.error("Login error:", error);
 
       if (error.response?.status === 401) {
-        showError("Email atau password salah");
+        setAuthError("Email atau password salah");
+        setFormData({ email: "", password: "" }); 
       } else if (error.response?.status === 422) {
         const errors = error.response.data?.errors;
         if (errors) {
-          const firstError = Object.values(errors)[0][0];
-          showError(firstError);
+          setFieldErrors({
+            email: errors.email?.[0] || "",
+            password: errors.password?.[0] || "",
+          });
         } else {
-          showError(error.response.data?.message || "Validasi gagal");
+          setAuthError(error.response.data?.message || "Validasi gagal");
         }
       } else if (error.response?.status === 500) {
-        showError("Terjadi kesalahan server");
+        setAuthError("Terjadi kesalahan server, coba beberapa saat lagi.");
       } else if (error.request) {
-        showError("Tidak dapat terhubung ke server");
+        setAuthError("Tidak dapat terhubung ke server.");
       } else {
-        showError("Terjadi kesalahan yang tidak terduga");
+        setAuthError("Terjadi kesalahan yang tidak terduga.");
       }
     } finally {
       setLoading(false);
@@ -70,39 +101,47 @@ const FormLogin = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <InputForm
-        label="Email"
-        type="email"
-        placeholder="example@gmail.com"
-        name="email"
-        value={email}
-        autoComplete="username"
-        onChange={(e) => setEmail(e.target.value)}
-        required
-      />
+    <>
+      {authError && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-300 rounded-lg">
+          <p className="text-red-600 text-sm text-center">{authError}</p>
+        </div>
+      )}
 
-      <InputForm
-        label="Password"
-        type="password"
-        placeholder="Masukkan password Anda"
-        name="password"
-        value={password}
-        autoComplete="current-password"
-        onChange={(e) => setPassword(e.target.value)}
-        required
-      />
+      <form onSubmit={handleSubmit} noValidate>
+        <InputForm
+          label="Email"
+          type="email"
+          placeholder="example@gmail.com"
+          name="email"
+          value={formData.email}
+          autoComplete="username"
+          onChange={handleChange}
+          error={fieldErrors.email}
+        />
 
-      <Button variant="bg-blue-600 w-full" disabled={loading}>
-        {loading ? (
-          <div className="flex items-center justify-center gap-2">
-            <ClipLoader color="white" loading={true} size={10} />
-          </div>
-        ) : (
-          "Login"
-        )}
-      </Button>
-    </form>
+        <InputForm
+          label="Password"
+          type="password"
+          placeholder="Masukkan password Anda"
+          name="password"
+          value={formData.password}
+          autoComplete="current-password"
+          onChange={handleChange}
+          error={fieldErrors.password}
+        />
+
+        <Button variant="bg-blue-600 w-full" disabled={loading}>
+          {loading ? (
+            <div className="flex items-center justify-center gap-2">
+              <ClipLoader color="white" loading={true} size={10} />
+            </div>
+          ) : (
+            "Login"
+          )}
+        </Button>
+      </form>
+    </>
   );
 };
 

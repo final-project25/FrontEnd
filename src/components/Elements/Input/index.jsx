@@ -5,7 +5,8 @@ const InputForm = ({
   name,
   value,
   onChange,
-  required,
+  autoComplete,
+  error,
 }) => {
   return (
     <div className="mb-6">
@@ -22,9 +23,16 @@ const InputForm = ({
         placeholder={placeholder}
         value={value}
         onChange={onChange}
-        required={required}
-        className="text-sm border rounded w-full py-2 px-3 text-slate-700 placeholder:opacity-50"
+        autoComplete={autoComplete}
+        className={`text-sm border rounded w-full py-2 px-3 text-slate-700 placeholder:opacity-50 outline-none transition-colors
+          ${error
+            ? "border-red-500 focus:border-red-500"
+            : "border-slate-300 focus:border-blue-500"
+          }`}
       />
+      {error && (
+        <p className="text-red-500 text-xs mt-1">{error}</p>
+      )}
     </div>
   );
 };
