@@ -7,7 +7,7 @@ import {
   Banknote,
   Contact,
 } from "lucide-react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { ClipLoader } from "react-spinners";
 import api from "../../services/api";
@@ -20,11 +20,46 @@ const Sidebar = () => {
 
   const menuItems = [
     { icon: Home, label: "Dashboard", path: "/dashboard" },
-    { icon: Users, label: "Karyawan", path: "/karyawan" },
-    { icon: Banknote, label: "Tagihan", path: "/tagihan" },
-    { icon: DollarSign, label: "Penggajian", path: "/penggajian" },
-    { icon: UserPlus, label: "Rekrutmen", path: "/rekrutmen" },
-    { icon: Contact, label: "Kontak", path: "/admin/kontak" },
+    {
+      icon: Users,
+      label: "Karyawan",
+      path: "/karyawan",
+      match: [
+        "/karyawan",
+        "/create-karyawan",
+        "/update-karyawan",
+        "/detail-karyawan",
+      ],
+    },
+    {
+      icon: Banknote,
+      label: "Tagihan",
+      path: "/tagihan",
+      match: [
+        "/tagihan",
+        "/create-tagihan",
+        "/detail-tagihan",
+        "/update-tagihan",
+      ],
+    },
+    {
+      icon: DollarSign,
+      label: "Penggajian",
+      path: "/penggajian",
+      match: [
+        "/penggajian",
+        "/create-penggajian",
+        "/update-penggajian",
+        "/detail-penggajian",
+      ],
+    },
+    {
+      icon: UserPlus,
+      label: "Rekrutmen",
+      path: "/rekrutmen",
+      match: ["/rekrutmen", "/create-rekrutmen", "/detail-lowongan", "/update-lowongan", "/daftar-pelamar"],
+    },
+    { icon: Contact, label: "Kontak", path: "/admin/kontak", match: ["/admin/kontak",] },
   ];
 
   useEffect(() => {
@@ -72,6 +107,15 @@ const Sidebar = () => {
       : name.substring(0, 2).toUpperCase();
   };
 
+  const location = useLocation();
+
+  const isMenuActive = (item) => {
+    if (item.match) {
+      return item.match.some((p) => location.pathname.startsWith(p));
+    }
+    return location.pathname === item.path;
+  };
+
   return (
     <>
       <aside className="hidden md:flex w-64 h-screen bg-gradient-to-b from-cyan-600 to-cyan-700 text-white flex-col fixed">
@@ -88,9 +132,9 @@ const Sidebar = () => {
                 <li key={item.path}>
                   <NavLink
                     to={item.path}
-                    className={({ isActive }) =>
+                    className={() =>
                       `flex items-center gap-3 px-4 py-3 rounded-lg ${
-                        isActive
+                        isMenuActive(item)
                           ? "bg-white text-cyan-700"
                           : "hover:bg-cyan-600"
                       }`
@@ -135,9 +179,9 @@ const Sidebar = () => {
             <NavLink
               key={item.path}
               to={item.path}
-              className={({ isActive }) =>
+              className={() =>
                 `flex flex-col items-center text-xs ${
-                  isActive ? "text-cyan-600" : "text-gray-500"
+                  isMenuActive(item) ? "text-cyan-600" : "text-gray-500"
                 }`
               }
             >
