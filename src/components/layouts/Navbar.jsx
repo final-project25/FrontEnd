@@ -16,11 +16,14 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeLink, setActiveLink] = useState("");
 
-  useEffect(() => {
-    if (location.pathname !== "/") {
-      setActiveLink(location.pathname);
-    }
-  }, [location]);
+  
+useEffect(() => {
+  if (location.pathname === "/") {
+    setActiveLink("#beranda"); 
+  } else {
+    setActiveLink(location.pathname);
+  }
+}, [location]);
 
   const handleAnchorClick = (e, href) => {
     e.preventDefault();
