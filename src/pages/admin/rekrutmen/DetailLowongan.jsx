@@ -338,7 +338,7 @@ const DetailLowonganPage = () => {
                   </p>
                 </div>
                 <button
-                  onClick={() => navigate(`/pelamar-lowongan/${lowongan.id}`)}
+                  onClick={() => navigate(`/daftar-pelamar/${lowongan.id}`)}
                   className="text-sm text-purple-600 hover:text-purple-800 font-medium"
                 >
                   Lihat daftar pelamar →
