@@ -2,14 +2,14 @@ import { ArrowLeft, Save } from "lucide-react";
 import { useState } from "react";
 import api from "../../../services/api";
 import { useNavigate } from "react-router-dom";
-import { succesError } from "../../../utils/notify";
+import { showError, succesError } from "../../../utils/notify";
 import { ClipLoader } from "react-spinners";
+import { mapBackendErrors } from "../../../utils/errorHandler";
 
 const FieldError = ({ message }) =>
   message ? <p className="text-red-500 text-xs mt-1">{message}</p> : null;
 
 const INITIAL_FORM = {
-  nomor_induk: "",
   nik: "",
   no_rek_bri: "",
   nama_lengkap: "",
@@ -22,7 +22,6 @@ const INITIAL_FORM = {
 };
 
 const INITIAL_ERRORS = {
-  nomor_induk: "",
   nik: "",
   no_rek_bri: "",
   nama_lengkap: "",
@@ -45,6 +44,7 @@ const CreateKaryawanPage = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    // Hapus error field saat user mulai mengisi
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
@@ -52,11 +52,7 @@ const CreateKaryawanPage = () => {
     const newErrors = { ...INITIAL_ERRORS };
     let isValid = true;
 
-    if (!formData.nomor_induk.trim()) {
-      newErrors.nomor_induk = "Nomor induk tidak boleh kosong";
-      isValid = false;
-    }
-
+    // Nama Lengkap
     if (!formData.nama_lengkap.trim()) {
       newErrors.nama_lengkap = "Nama lengkap tidak boleh kosong";
       isValid = false;
@@ -65,6 +61,7 @@ const CreateKaryawanPage = () => {
       isValid = false;
     }
 
+    // NIK
     if (!formData.nik.trim()) {
       newErrors.nik = "NIK tidak boleh kosong";
       isValid = false;
@@ -73,21 +70,25 @@ const CreateKaryawanPage = () => {
       isValid = false;
     }
 
+    // Alamat
     if (!formData.alamat.trim()) {
       newErrors.alamat = "Alamat tidak boleh kosong";
       isValid = false;
     }
 
+    // Posisi
     if (!formData.posisi) {
       newErrors.posisi = "Posisi/jabatan harus dipilih";
       isValid = false;
     }
 
+    // Tanggal Masuk
     if (!formData.tanggal_masuk) {
       newErrors.tanggal_masuk = "Tanggal masuk tidak boleh kosong";
       isValid = false;
     }
 
+    // Email
     if (!formData.email.trim()) {
       newErrors.email = "Email tidak boleh kosong";
       isValid = false;
@@ -96,6 +97,7 @@ const CreateKaryawanPage = () => {
       isValid = false;
     }
 
+    // No. WhatsApp
     if (!formData.no_wa.trim()) {
       newErrors.no_wa = "No. WhatsApp tidak boleh kosong";
       isValid = false;
@@ -104,6 +106,7 @@ const CreateKaryawanPage = () => {
       isValid = false;
     }
 
+    // No. Rekening BRI
     if (!formData.no_rek_bri.trim()) {
       newErrors.no_rek_bri = "No. rekening BRI tidak boleh kosong";
       isValid = false;
@@ -129,20 +132,20 @@ const CreateKaryawanPage = () => {
       console.error(error);
 
       if (error.response?.status === 422) {
-        const backendErrors = error.response.data?.errors;
+        const backendErrors = error.response?.data?.errors;
+
         if (backendErrors) {
-          const mapped = { ...INITIAL_ERRORS };
-          Object.keys(backendErrors).forEach((key) => {
-            if (Object.prototype.hasOwnProperty.call(mapped, key)) {
-              mapped[key] = backendErrors[key][0];
-            }
-          });
-          setErrors(mapped);
+          setErrors((prev) => ({
+            ...prev,
+            ...mapBackendErrors(backendErrors),
+          }));
         }
-      } else {
-        const { showError } = await import("../../../utils/notify");
-        showError(error.response?.data?.message || "Gagal menambahkan data karyawan");
+
+        return;
       }
+      showError(
+        error.response?.data?.message || "Gagal menambahkan data karyawan",
+      );
     } finally {
       setLoading(false);
     }
@@ -170,7 +173,9 @@ const CreateKaryawanPage = () => {
           <ArrowLeft size={20} />
           <span>Kembali ke Data Karyawan</span>
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">Tambah Data Karyawan</h1>
+        <h1 className="text-2xl font-bold text-gray-900">
+          Tambah Data Karyawan
+        </h1>
         <p className="text-gray-600 mt-1">
           Lengkapi form di bawah untuk menambahkan karyawan baru
         </p>
@@ -178,26 +183,12 @@ const CreateKaryawanPage = () => {
 
       <form onSubmit={handleSubmit} noValidate>
         <div className="bg-white rounded-lg shadow">
-
+          {/* Data Pribadi */}
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Data Pribadi</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Data Pribadi
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nomor Induk <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="nomor_induk"
-                  value={formData.nomor_induk}
-                  onChange={handleChange}
-                  placeholder="Contoh: KRY001"
-                  className={inputClass("nomor_induk")}
-                />
-                <FieldError message={errors.nomor_induk} />
-              </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Nama Lengkap <span className="text-red-500">*</span>
@@ -246,10 +237,12 @@ const CreateKaryawanPage = () => {
             </div>
           </div>
 
+          {/* Data Kepegawaian */}
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Data Kepegawaian</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Data Kepegawaian
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Posisi/Jabatan <span className="text-red-500">*</span>
@@ -309,17 +302,21 @@ const CreateKaryawanPage = () => {
                       checked={formData.status_aktif === "0"}
                       className="w-4 h-4 text-cyan-600 focus:ring-cyan-500"
                     />
-                    <span className="ml-2 text-sm text-gray-700">Tidak Aktif</span>
+                    <span className="ml-2 text-sm text-gray-700">
+                      Tidak Aktif
+                    </span>
                   </label>
                 </div>
               </div>
             </div>
           </div>
 
+          {/* Data Kontak */}
           <div className="p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Data Kontak</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Data Kontak
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Email <span className="text-red-500">*</span>
@@ -345,7 +342,7 @@ const CreateKaryawanPage = () => {
                   value={formData.no_wa}
                   onChange={handleChange}
                   placeholder="08xxxxxxxxxx"
-                  maxLength="13"
+                  maxLength={13}
                   className={inputClass("no_wa")}
                 />
                 <FieldError message={errors.no_wa} />
@@ -361,6 +358,7 @@ const CreateKaryawanPage = () => {
                   value={formData.no_rek_bri}
                   onChange={handleChange}
                   placeholder="Masukkan nomor rekening BRI"
+                  maxLength={16}
                   className={inputClass("no_rek_bri")}
                 />
                 <FieldError message={errors.no_rek_bri} />
@@ -370,6 +368,7 @@ const CreateKaryawanPage = () => {
         </div>
 
         <div className="mt-6 flex items-center justify-end gap-4">
+          {/* Fix: tambah handler onClick */}
           <button
             type="button"
             onClick={handleCancel}

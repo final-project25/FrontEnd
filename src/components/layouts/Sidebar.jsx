@@ -6,6 +6,7 @@ import {
   LogOut,
   Banknote,
   Contact,
+  ShieldCheck, 
 } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -18,50 +19,6 @@ const Sidebar = () => {
   const [user, setUser] = useState(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const menuItems = [
-    { icon: Home, label: "Dashboard", path: "/dashboard" },
-    {
-      icon: Users,
-      label: "Karyawan",
-      path: "/karyawan",
-      match: [
-        "/karyawan",
-        "/create-karyawan",
-        "/update-karyawan",
-        "/detail-karyawan",
-      ],
-    },
-    {
-      icon: Banknote,
-      label: "Tagihan",
-      path: "/tagihan",
-      match: [
-        "/tagihan",
-        "/create-tagihan",
-        "/detail-tagihan",
-        "/update-tagihan",
-      ],
-    },
-    {
-      icon: DollarSign,
-      label: "Penggajian",
-      path: "/penggajian",
-      match: [
-        "/penggajian",
-        "/create-penggajian",
-        "/update-penggajian",
-        "/detail-penggajian",
-      ],
-    },
-    {
-      icon: UserPlus,
-      label: "Rekrutmen",
-      path: "/rekrutmen",
-      match: ["/rekrutmen", "/create-rekrutmen", "/detail-lowongan", "/update-lowongan", "/daftar-pelamar"],
-    },
-    { icon: Contact, label: "Kontak", path: "/admin/kontak", match: ["/admin/kontak",] },
-  ];
-
   useEffect(() => {
     const userStr = localStorage.getItem("user");
     if (userStr) {
@@ -73,25 +30,61 @@ const Sidebar = () => {
     }
   }, []);
 
+  // Menu umum untuk semua admin
+  const baseMenuItems = [
+    { icon: Home, label: "Dashboard", path: "/dashboard" },
+    {
+      icon: Users,
+      label: "Karyawan",
+      path: "/karyawan",
+      match: ["/karyawan", "/create-karyawan", "/update-karyawan", "/detail-karyawan"],
+    },
+    {
+      icon: Banknote,
+      label: "Tagihan",
+      path: "/tagihan",
+      match: ["/tagihan", "/create-tagihan", "/detail-tagihan", "/update-tagihan"],
+    },
+    {
+      icon: DollarSign,
+      label: "Penggajian",
+      path: "/penggajian",
+      match: ["/penggajian", "/create-penggajian", "/update-penggajian", "/detail-penggajian"],
+    },
+    {
+      icon: UserPlus,
+      label: "Rekrutmen",
+      path: "/rekrutmen",
+      match: ["/rekrutmen", "/create-rekrutmen", "/detail-lowongan", "/update-lowongan", "/daftar-pelamar"],
+    },
+    { icon: Contact, label: "Kontak", path: "/admin/kontak", match: ["/admin/kontak"] },
+  ];
+
+  const menuItems = [
+    ...baseMenuItems,
+    {
+      icon: ShieldCheck,
+      label: "Kelola Admin",
+      path: "/admin/register-admin",
+      match: ["/admin/register-admin"],
+    },
+  ];
+
   const handleLogout = async () => {
     const confirmLogout = window.confirm("Yakin logout?");
     if (!confirmLogout) return;
 
     setIsLoggingOut(true);
-
     try {
       await api.post("/logout");
-
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-
       succesError("Logout berhasil");
       navigate("/login");
     } catch (error) {
       console.error("Logout error:", error);
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-
       showError("Session habis / error logout");
       navigate("/login");
     } finally {
@@ -124,7 +117,7 @@ const Sidebar = () => {
           <p className="text-sm text-cyan-100">Admin Panel</p>
         </div>
 
-        <nav className="flex-1 py-6">
+        <nav className="flex-1 py-6 overflow-y-auto">
           <ul className="space-y-2 px-3">
             {menuItems.map((item) => {
               const Icon = item.icon;
@@ -151,7 +144,10 @@ const Sidebar = () => {
 
         <div className="p-4 border-t border-cyan-500">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <NavLink
+              to="/admin/profil"
+              className="flex items-center gap-3 hover:opacity-80 transition"
+            >
               <div className="w-10 h-10 rounded-full bg-white text-cyan-700 flex items-center justify-center font-bold">
                 {getInitials(user?.name)}
               </div>
@@ -159,8 +155,7 @@ const Sidebar = () => {
                 <p className="text-sm">{user?.name || "User"}</p>
                 <p className="text-xs text-cyan-100">Admin</p>
               </div>
-            </div>
-
+            </NavLink>
             <button onClick={handleLogout}>
               {isLoggingOut ? (
                 <ClipLoader size={18} color="white" />
@@ -172,6 +167,7 @@ const Sidebar = () => {
         </div>
       </aside>
 
+      {/* Bottom Nav Mobile */}
       <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t flex justify-around py-2 md:hidden z-50">
         {menuItems.slice(0, 5).map((item) => {
           const Icon = item.icon;

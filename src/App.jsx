@@ -36,6 +36,8 @@ import RegisterPage from "./pages/admin/auth/register";
 import KontakForm from "./components/landing/kontak/Kontak";
 import KontakPage from "./pages/admin/kontak/Kontak";
 import DetailKontakPage from "./pages/admin/kontak/DetailKontak";
+import RegisterAdminPage from "./pages/admin/auth/RegisterAdmin";
+import ProfileAdmin from "./pages/admin/auth/ProfileAdmin";
 
 function App() {
   return (
@@ -68,19 +70,19 @@ function App() {
           }
         >
           <Route path="/dashboard" element={<Dashboard />} />
+
           {/* Karyawan Routes */}
           <Route path="/karyawan" element={<KaryawanPage />} />
           <Route path="/create-karyawan" element={<CreateKaryawanPage />} />
           <Route path="/update-karyawan/:id" element={<UpdateKaryawanPage />} />
-          <Route
-            path="/detail-karyawan/:id"
-            element={<DetailKaryawanPage />}
-          />{" "}
+          <Route path="/detail-karyawan/:id" element={<DetailKaryawanPage />} />
+
           {/* Tagihan Routes */}
           <Route path="/tagihan" element={<TagihanPage />} />
           <Route path="/create-tagihan" element={<CreateTagihanPage />} />
           <Route path="/detail-tagihan/:id" element={<DetailTagihanPage />} />
           <Route path="/update-tagihan/:id" element={<UpdateTagihanPage />} />
+
           {/* Penggajian Routes */}
           <Route path="/penggajian" element={<PenggajianPage />} />
           <Route path="/create-penggajian" element={<CreatePenggajianPage />} />
@@ -92,16 +94,25 @@ function App() {
             path="/detail-penggajian/:id"
             element={<DetailPenggajianPage />}
           />
+
           {/* Rekrutmen Routes */}
           <Route path="/rekrutmen" element={<RekrutmenPage />} />
           <Route path="/create-rekrutmen" element={<CreateRekrutmenPage />} />
           <Route path="/detail-lowongan/:id" element={<DetailLowonganPage />} />
           <Route path="/update-lowongan/:id" element={<UpdateLowonganPage />} />
+
           {/* Pelamar Routes */}
           <Route path="/daftar-pelamar/:id" element={<DaftarPelamarPage />} />
-          {/* Laporan Routes */}
+
+          {/* Kontak Routes */}
           <Route path="/admin/kontak" element={<KontakPage />} />
           <Route path="/admin/kontak/:id" element={<DetailKontakPage />} />
+
+          {/* Register Admin Baru */}
+          <Route path="/admin/register-admin" element={<RegisterAdminPage />} />
+
+          {/* Profil Admin */}
+          <Route path="/admin/profil" element={<ProfileAdmin />} />
         </Route>
       </Routes>
     </Router>

@@ -60,27 +60,27 @@ const PenggajianPage = () => {
   }, []);
 
   const fetchPenggajian = async (page = 1) => {
-    try {
-      setLoading(true);
-      const response = await api.get(`/penggajian?page=${page}`);
-      const data = response.data.data;
+  try {
+    setLoading(true);
+    const response = await api.get(`/penggajian?page=${page}`);
+    const { data, meta } = response.data; // ← ambil dari meta
 
-      setPenggajian(data.data);
-      setPagination({
-        current_page: data.current_page,
-        last_page: data.last_page,
-        total: data.total,
-        per_page: data.per_page,
-        from: data.from,
-        to: data.to,
-      });
-    } catch (error) {
-      console.error(error);
-      showError("Gagal memuat data penggajian");
-    } finally {
-      setLoading(false);
-    }
-  };
+    setPenggajian(data);
+    setPagination({
+      current_page: meta.current_page,
+      last_page: meta.last_page,
+      total: meta.total,
+      per_page: meta.per_page,
+      from: meta.from,
+      to: meta.to,
+    });
+  } catch (error) {
+    console.error(error);
+    showError("Gagal memuat data penggajian");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handlePageChange = (page) => {
     if (page < 1 || page > pagination.last_page) return;
@@ -148,9 +148,9 @@ const PenggajianPage = () => {
   };
 
   const pageNumbers = Array.from(
-    { length: pagination.last_page },
-    (_, i) => i + 1,
-  );
+  { length: pagination.last_page || 1 },
+  (_, i) => i + 1,
+);
 
   return (
     <div>
@@ -265,8 +265,8 @@ const PenggajianPage = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {(pagination.current_page - 1) * pagination.per_page + index + 1}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{p.nama}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{p.posisi}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{p.karyawan?.nama_lengkap}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{p.karyawan?.posisi}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatMonthYear(p.gajian_bulan)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{p.jumlah_hari_kerja} hari</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{formatCurrency(p.upah_kotor_karyawan)}</td>

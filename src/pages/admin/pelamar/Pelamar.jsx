@@ -54,6 +54,7 @@ const DaftarPelamarPage = () => {
       const filteredPelamar = response.data.data.filter(
         (p) => p.lowongan_kerja.id === parseInt(lowonganId),
       );
+      
 
       setPelamar(filteredPelamar);
 
