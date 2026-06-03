@@ -4,37 +4,38 @@ import api from "../../../services/api";
 import { ClipLoader } from "react-spinners";
 import { useNavigate } from "react-router-dom";
 import { showError, succesError } from "../../../utils/notify";
+import { mapBackendErrors } from "../../../utils/errorHandler";
+
+const INITIAL_FORM = {
+  karyawan_id: "",
+  jumlah_penghasilan_kotor: "",
+  jumlah_hari_kerja: "",
+  gaji_harian: "",
+  tagihan_bulan: "",
+  jlh_lembur: "",
+  thr: "",
+  seragam_cs_dan_keamanan: "",
+  fee_manajemen: "",
+};
+
+const INITIAL_ERRORS = {
+  karyawan_id: "",
+  jumlah_penghasilan_kotor: "",
+  jumlah_hari_kerja: "",
+  gaji_harian: "",
+  tagihan_bulan: "",
+  jlh_lembur: "",
+  thr: "",
+  seragam_cs_dan_keamanan: "",
+  fee_manajemen: "",
+};
 
 const CreateTagihanPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [karyawan, setKaryawan] = useState([]);
-
-  const [formData, setFormData] = useState({
-    no_induk: "",
-    nik: "",
-    nama: "",
-    no_rek_bri: "",
-    posisi: "",
-    jumlah_gaji_diterima: "",
-    bpjs_kesehatan: "149316",
-    jkk: "8959",
-    jkm: "11199",
-    jht: "138118",
-    jp: "74658",
-    jumlah_iuran_bpjs: "0",
-    seragam_cs_dan_keamanan: "50000",
-    fee_manajemen: "50000",
-    thr: "0",
-    jumlah_hari_kerja: "",
-    gaji_harian: "149316",
-    lembur: "0",
-    upa_yang_diterima_pekerja: "",
-    total_diterima: "",
-    periode_awal: "",
-    periode_akhir: "",
-    tanggal_cetak: "",
-  });
+  const [formData, setFormData] = useState(INITIAL_FORM);
+  const [errors, setErrors] = useState(INITIAL_ERRORS);
 
   useEffect(() => {
     getAllKaryawan();
@@ -57,6 +58,40 @@ const CreateTagihanPage = () => {
     }
   };
 
+  const validate = () => {
+    const newErrors = { ...INITIAL_ERRORS };
+    let isValid = true;
+
+    if (!formData.karyawan_id) {
+      newErrors.karyawan_id = "Silakan pilih karyawan";
+      isValid = false;
+    }
+
+    if (!formData.jumlah_penghasilan_kotor) {
+      newErrors.jumlah_penghasilan_kotor =
+        "Jumlah penghasilan kotor wajib diisi";
+      isValid = false;
+    }
+
+    if (!formData.jumlah_hari_kerja) {
+      newErrors.jumlah_hari_kerja = "Jumlah hari kerja wajib diisi";
+      isValid = false;
+    }
+
+    if (!formData.gaji_harian) {
+      newErrors.gaji_harian = "Gaji harian wajib diisi";
+      isValid = false;
+    }
+
+    if (!formData.tagihan_bulan) {
+      newErrors.tagihan_bulan = "Bulan tagihan wajib dipilih";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
   const handleChangeKaryawan = (e) => {
     const selectedId = e.target.value;
     const selectedKaryawan = karyawan.find(
@@ -65,6 +100,7 @@ const CreateTagihanPage = () => {
     if (selectedKaryawan) {
       setFormData((prev) => ({
         ...prev,
+        karyawan_id: selectedKaryawan.id,
         no_induk: selectedKaryawan.nomor_induk,
         no_rek_bri: selectedKaryawan.no_rek_bri,
         nik: selectedKaryawan.nik,
@@ -90,66 +126,75 @@ const CreateTagihanPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.nik) {
-      showError("Silakan pilih karyawan terlebih dahulu");
-      return;
-    }
+    if (!validate()) return;
 
     const requiredFields = [
-      "no_induk",
-      "nik",
-      "nama",
-      "no_rek_bri",
-      "posisi",
+      "jumlah_penghasilan_kotor",
+      "seragam_cs_dan_keamanan",
+      "fee_manajemen",
       "jumlah_hari_kerja",
       "gaji_harian",
-      "periode_awal",
-      "periode_akhir",
-      "tanggal_cetak",
+      "tagihan_bulan",
     ];
-
     const emptyFields = requiredFields.filter((field) => !formData[field]);
 
     if (emptyFields.length > 0) {
-      showError("Mohon lengkapi semua field yang bertanda *");
+      console.log("Field kosong:", emptyFields);
+      showError(`Field kosong: ${emptyFields.join(", ")}`);
       return;
     }
 
     try {
       const submitData = {
         ...formData,
-        bpjs_kesehatan: parseFloat(formData.bpjs_kesehatan) || 0,
-        jkk: parseFloat(formData.jkk) || 0,
-        jkm: parseFloat(formData.jkm) || 0,
-        jht: parseFloat(formData.jht) || 0,
-        jp: parseFloat(formData.jp) || 0,
+
         seragam_cs_dan_keamanan:
           parseFloat(formData.seragam_cs_dan_keamanan) || 0,
         fee_manajemen: parseFloat(formData.fee_manajemen) || 0,
         thr: parseFloat(formData.thr) || 0,
         jumlah_hari_kerja: parseFloat(formData.jumlah_hari_kerja),
         gaji_harian: parseFloat(formData.gaji_harian),
-        lembur: parseFloat(formData.lembur) || 0,
+        jlh_lembur: parseFloat(formData.jlh_lembur) || 0,
       };
 
       setLoading(true);
+      console.log(submitData);
       const response = await api.post(`/tagihan`, submitData);
       console.log(response.data);
       succesError("Data tagihan berhasil ditambahkan");
       navigate("/tagihan");
     } catch (error) {
-      console.log(error);
       if (error.response?.status === 422) {
-        const errors = error.response.data.errors;
-        const errorMessages = Object.values(errors).flat().join(", ");
-        showError(errorMessages || "Data tidak valid");
-      } else {
-        showError(error.response?.data?.message || "Gagal menyimpan data");
+        const backendErrors = error.response.data.errors;
+
+        if (backendErrors) {
+          setErrors((prev) => ({
+            ...prev,
+            ...mapBackendErrors(backendErrors),
+          }));
+        }
+
+        return;
       }
+
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        "Terjadi kesalahan pada server";
+
+      showError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
+
+  const FieldError = ({ message }) =>
+    message ? <p className="text-red-500 text-xs mt-1">{message}</p> : null;
+
+  const inputClass = (field) =>
+    `w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent ${
+      errors[field] ? "border-red-500" : "border-gray-300"
+    }`;
 
   const formatCurrency = (value) => {
     if (!value) return "Rp 0";
@@ -300,6 +345,27 @@ const CreateTagihanPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Jumlah Gaji Kotor <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  step="0.5"
+                  name="jumlah_penghasilan_kotor"
+                  value={formData.jumlah_penghasilan_kotor}
+                  onChange={handleChange}
+                  placeholder="0"
+                  disabled={loading}
+                  className={inputClass("jumlah_penghasilan_kotor")}
+                />
+
+                <FieldError message={errors.jumlah_penghasilan_kotor} />
+                <p className="text-xs text-gray-500 mt-1">
+                  {formatCurrency(formData.jumlah_penghasilan_kotor)}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Jumlah Hari Kerja <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -310,8 +376,9 @@ const CreateTagihanPage = () => {
                   onChange={handleChange}
                   placeholder="0"
                   disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className={inputClass("jumlah_hari_kerja")}
                 />
+                <FieldError message={errors.jumlah_hari_kerja} />
                 <p className="text-xs text-gray-500 mt-1">
                   Bisa desimal (contoh: 24.5)
                 </p>
@@ -328,8 +395,9 @@ const CreateTagihanPage = () => {
                   onChange={handleChange}
                   placeholder="0"
                   disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className={inputClass("gaji_harian")}
                 />
+                <FieldError message={errors.gaji_harian} />
                 <p className="text-xs text-gray-500 mt-1">
                   {formatCurrency(formData.gaji_harian)}
                 </p>
@@ -341,15 +409,15 @@ const CreateTagihanPage = () => {
                 </label>
                 <input
                   type="number"
-                  name="lembur"
-                  value={formData.lembur}
+                  name="jlh_lembur"
+                  value={formData.jlh_lembur}
                   onChange={handleChange}
                   placeholder="0"
                   disabled={loading}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  {formatCurrency(formData.lembur)}
+                  {formatCurrency(formData.jlh_lembur)}
                 </p>
               </div>
 
@@ -380,96 +448,6 @@ const CreateTagihanPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  BPJS Kesehatan
-                </label>
-                <input
-                  type="number"
-                  name="bpjs_kesehatan"
-                  value={formData.bpjs_kesehatan}
-                  onChange={handleChange}
-                  placeholder="0"
-                  disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-                />
-                <p className="text-xs text-red-600 mt-1">
-                  {formatCurrency(formData.bpjs_kesehatan)}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  JKK (Jaminan Kecelakaan Kerja)
-                </label>
-                <input
-                  type="number"
-                  name="jkk"
-                  value={formData.jkk}
-                  onChange={handleChange}
-                  placeholder="0"
-                  disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-                />
-                <p className="text-xs text-red-600 mt-1">
-                  {formatCurrency(formData.jkk)}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  JKM (Jaminan Kematian)
-                </label>
-                <input
-                  type="number"
-                  name="jkm"
-                  value={formData.jkm}
-                  onChange={handleChange}
-                  placeholder="0"
-                  disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-                />
-                <p className="text-xs text-red-600 mt-1">
-                  {formatCurrency(formData.jkm)}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  JHT (Jaminan Hari Tua)
-                </label>
-                <input
-                  type="number"
-                  name="jht"
-                  value={formData.jht}
-                  onChange={handleChange}
-                  placeholder="0"
-                  disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-                />
-                <p className="text-xs text-red-600 mt-1">
-                  {formatCurrency(formData.jht)}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  JP (Jaminan Pensiun)
-                </label>
-                <input
-                  type="number"
-                  name="jp"
-                  value={formData.jp}
-                  onChange={handleChange}
-                  placeholder="0"
-                  disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-                />
-                <p className="text-xs text-red-600 mt-1">
-                  {formatCurrency(formData.jp)}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Seragam CS & Keamanan
                 </label>
                 <input
@@ -479,8 +457,10 @@ const CreateTagihanPage = () => {
                   onChange={handleChange}
                   placeholder="0"
                   disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className={inputClass("seragam_cs_dan_keamanan")}
                 />
+
+                <FieldError message={errors.seragam_cs_dan_keamanan} />
                 <p className="text-xs text-gray-500 mt-1">
                   {formatCurrency(formData.seragam_cs_dan_keamanan)}
                 </p>
@@ -497,20 +477,12 @@ const CreateTagihanPage = () => {
                   onChange={handleChange}
                   placeholder="0"
                   disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className={inputClass("fee_manajemen")}
                 />
+                <FieldError message={errors.fee_manajemen} />
                 <p className="text-xs text-green-600 mt-1">
                   {formatCurrency(formData.fee_manajemen)}
                 </p>
-              </div>
-
-              <div className="bg-red-50 p-4 rounded-lg">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Jumlah Iuran BPJS (Auto)
-                </label>
-                <div className="text-2xl font-bold text-red-600">
-                  {formatCurrency(formData.jumlah_iuran_bpjs)}
-                </div>
               </div>
             </div>
           </div>
@@ -522,44 +494,17 @@ const CreateTagihanPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Periode Awal <span className="text-red-500">*</span>
+                  Tagihan Bulan Ini <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
-                  name="periode_awal"
-                  value={formData.periode_awal}
+                  name="tagihan_bulan"
+                  value={formData.tagihan_bulan}
                   onChange={handleChange}
                   disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className={inputClass("tagihan_bulan")}
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Periode Akhir <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  name="periode_akhir"
-                  value={formData.periode_akhir}
-                  onChange={handleChange}
-                  disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tanggal Cetak <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  name="tanggal_cetak"
-                  value={formData.tanggal_cetak}
-                  onChange={handleChange}
-                  disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-                />
+                <FieldError message={errors.tagihan_bulan} />
               </div>
             </div>
           </div>

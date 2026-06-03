@@ -17,8 +17,7 @@ const TagihanPage = () => {
   const [links, setLinks] = useState(null);
 
   // State untuk filter export (periode awal & akhir)
-  const [periodeAwal, setPeriodeAwal] = useState("");
-  const [periodeAkhir, setPeriodeAkhir] = useState("");
+  const [periodeTagihan, setPeriodeTagihan] = useState("");
 
   // State search
   const [search, setSearch] = useState("");
@@ -42,10 +41,9 @@ const TagihanPage = () => {
 
     const today = new Date();
     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    // const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-    setPeriodeAwal(firstDay.toISOString().split("T")[0]);
-    setPeriodeAkhir(lastDay.toISOString().split("T")[0]);
+    setPeriodeTagihan(firstDay.toISOString().split("T")[0]);
   }, [currentPage]);
 
   const handleDelete = async (id) => {
@@ -65,29 +63,24 @@ const TagihanPage = () => {
   };
 
   const handleExportExcel = async () => {
-    if (!periodeAwal || !periodeAkhir) {
-      showError("Mohon pilih periode awal dan periode akhir");
-      return;
-    }
-    if (new Date(periodeAwal) > new Date(periodeAkhir)) {
-      showError("Periode awal tidak boleh lebih besar dari periode akhir");
+    if (!periodeTagihan) {
+      showError("Mohon pilih periode Tagihan");
       return;
     }
 
     try {
       setExportLoading(true);
-      const formattedPeriodeAwal = periodeAwal.replace(/-/g, "/");
-      const formattedPeriodeAkhir = periodeAkhir.replace(/-/g, "/");
+      const formattedPeriodeTagihan = periodeTagihan.replace(/-/g, "/");
 
       const response = await api.get(
-        `/tagihan/export/excel?periode_awal=${formattedPeriodeAwal}&periode_akhir=${formattedPeriodeAkhir}`,
+        `/tagihan/export/excel?tagihan-bulan=${formattedPeriodeTagihan}`,
         { responseType: "blob" }
       );
 
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
-      const fileName = `Tagihan_${periodeAwal}_to_${periodeAkhir}.xlsx`;
+      const fileName = `Tagihan_${periodeTagihan}.xlsx`;
       link.setAttribute("download", fileName);
       document.body.appendChild(link);
       link.click();
@@ -183,28 +176,20 @@ const TagihanPage = () => {
               </span>
 
               <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-600">Periode Awal:</label>
+                <label className="text-sm text-gray-600">Periode Tagihan:</label>
                 <input
                   type="date"
-                  value={periodeAwal}
-                  onChange={(e) => setPeriodeAwal(e.target.value)}
+                  value={periodeTagihan}
+                  onChange={(e) => setPeriodeTagihan(e.target.value)}
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                 />
               </div>
 
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-600">Periode Akhir:</label>
-                <input
-                  type="date"
-                  value={periodeAkhir}
-                  onChange={(e) => setPeriodeAkhir(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                />
-              </div>
+              
 
               <button
                 onClick={handleExportExcel}
-                disabled={exportLoading || !periodeAwal || !periodeAkhir}
+                disabled={exportLoading || !periodeTagihan}
                 className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:bg-green-400 disabled:cursor-not-allowed"
               >
                 {exportLoading ? (
@@ -220,10 +205,9 @@ const TagihanPage = () => {
                 )}
               </button>
 
-              {periodeAwal && periodeAkhir && (
+              {periodeTagihan && (
                 <span className="text-sm text-gray-500">
-                  Export data: {formatDate(periodeAwal)} -{" "}
-                  {formatDate(periodeAkhir)}
+                  Export data: {formatDate(periodeTagihan)}
                 </span>
               )}
             </div>

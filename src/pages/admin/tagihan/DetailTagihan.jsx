@@ -19,7 +19,7 @@ const DetailTagihanPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [loading, setLoading] = useState(false);
-  const [tagihan, setTagihan] = useState([]);
+  const [tagihan, setTagihan] = useState({});
 
   useEffect(() => {
     getTagihanById();
@@ -93,6 +93,13 @@ const DetailTagihanPage = () => {
     return posisiMap[posisi] || posisi;
   };
 
+  const totalBpjs =
+    Number(tagihan.bpjs_kesehatan || 0) +
+    Number(tagihan.jkk || 0) +
+    Number(tagihan.jkm || 0) +
+    Number(tagihan.jht || 0) +
+    Number(tagihan.jp || 0);
+
   return (
     <div>
       <div className="mb-6">
@@ -113,10 +120,7 @@ const DetailTagihanPage = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
-              <FileText size={18} />
-              <span>Cetak Tagihan</span>
-            </button>
+           
             <button
               onClick={() => navigate(`/update-tagihan/${id}`)}
               className="flex items-center gap-2 bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors"
@@ -151,7 +155,7 @@ const DetailTagihanPage = () => {
                 <div className="flex items-center gap-2">
                   <User size={16} className="text-gray-400" />
                   <p className="text-base text-gray-900 font-medium">
-                    {tagihan.no_induk}
+                    {tagihan.karyawan?.nomor_induk}
                   </p>
                 </div>
               </div>
@@ -160,7 +164,9 @@ const DetailTagihanPage = () => {
                 <label className="block text-sm font-medium text-gray-500 mb-1">
                   NIK
                 </label>
-                <p className="text-base text-gray-900">{tagihan.nik}</p>
+                <p className="text-base text-gray-900">
+                  {tagihan.karyawan?.nik}
+                </p>
               </div>
 
               <div>
@@ -168,7 +174,7 @@ const DetailTagihanPage = () => {
                   Nama Karyawan
                 </label>
                 <p className="text-base text-gray-900 font-medium">
-                  {tagihan.nama}
+                  {tagihan.karyawan?.nama_lengkap}
                 </p>
               </div>
 
@@ -179,7 +185,7 @@ const DetailTagihanPage = () => {
                 <div className="flex items-center gap-2">
                   <Briefcase size={16} className="text-gray-400" />
                   <p className="text-base text-gray-900">
-                    {formatPosisi(tagihan.posisi)}
+                    {formatPosisi(tagihan.karyawan?.posisi)}
                   </p>
                 </div>
               </div>
@@ -191,7 +197,7 @@ const DetailTagihanPage = () => {
                 <div className="flex items-center gap-2">
                   <CreditCard size={16} className="text-gray-400" />
                   <p className="text-base text-gray-900">
-                    {tagihan.no_rek_bri}
+                    {tagihan.karyawan?.no_rek_bri}
                   </p>
                 </div>
               </div>
@@ -209,31 +215,31 @@ const DetailTagihanPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-500 mb-1">
-                  Periode Awal
+                  Bulan Tagihan
                 </label>
                 <div className="flex items-center gap-2 text-gray-900">
                   <Calendar size={16} className="text-gray-400" />
                   <span className="font-medium">
-                    {formatDate(tagihan.periode_awal)}
+                    {tagihan.bulan_tahun || "-"}
                   </span>
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-500 mb-1">
-                  Periode Akhir
+                  Tanggal Tagihan
                 </label>
                 <p className="text-base text-gray-900">
-                  {formatDate(tagihan.periode_akhir)}
+                  {formatDate(tagihan.tagihan_bulan)}
                 </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-500 mb-1">
-                  Tanggal Cetak
+                  Dibuat Pada
                 </label>
                 <p className="text-base text-gray-900">
-                  {formatDate(tagihan.tanggal_cetak)}
+                  {formatDate(tagihan.created_at)}
                 </p>
               </div>
 
@@ -268,16 +274,25 @@ const DetailTagihanPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-500 mb-1">
-                  Jumlah Lembur
+                  Jumlah Penghasilan Kotor
                 </label>
-                <p className="text-base text-gray-900">
-                  {formatCurrency(tagihan.lembur)}
+                <p className="text-base text-gray-900 font-medium">
+                  {formatCurrency(tagihan.jumlah_penghasilan_kotor)}
                 </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-500 mb-1">
-                  Uang THR
+                  Jumlah Lembur
+                </label>
+                <p className="text-base text-gray-900">
+                  {formatCurrency(tagihan.jlh_lembur)}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-500 mb-1">
+                  THR
                 </label>
                 <p className="text-base text-gray-900">
                   {formatCurrency(tagihan.thr)}
@@ -343,7 +358,7 @@ const DetailTagihanPage = () => {
                   Jumlah Iuran BPJS
                 </label>
                 <p className="text-xl font-bold text-red-600">
-                  - {formatCurrency(tagihan.jumlah_iuran_bpjs)}
+                  {formatCurrency(totalBpjs)}
                 </p>
               </div>
             </div>
@@ -394,7 +409,7 @@ const DetailTagihanPage = () => {
                 <div className="flex items-center gap-2">
                   <DollarSign size={24} className="text-blue-600" />
                   <p className="text-2xl font-bold text-blue-600">
-                    {formatCurrency(tagihan.upa_pekerja)}
+                    {formatCurrency(tagihan.jumlah_penghasilan_kotor)}{" "}
                   </p>
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
@@ -409,7 +424,7 @@ const DetailTagihanPage = () => {
                 <div className="flex items-center gap-2">
                   <DollarSign size={24} className="text-orange-600" />
                   <p className="text-2xl font-bold text-orange-600">
-                    {formatCurrency(tagihan.upah_yang_diterima_pekerja)}
+                    {formatCurrency(tagihan.upah_diterima_pekerja)}{" "}
                   </p>
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
@@ -424,7 +439,7 @@ const DetailTagihanPage = () => {
                 <div className="flex items-center gap-2">
                   <DollarSign size={24} className="text-green-600" />
                   <p className="text-2xl font-bold text-green-600">
-                    {formatCurrency(tagihan.total_diterima)}
+                    {formatCurrency(tagihan.upah_total)}{" "}
                   </p>
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
@@ -435,19 +450,58 @@ const DetailTagihanPage = () => {
           </div>
         </div>
 
-        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-gray-500">Dibuat pada:</span>
-              <span className="ml-2 text-gray-700">
-                {formatDate(tagihan.created_at)}
-              </span>
-            </div>
-            <div>
-              <span className="text-gray-500">Terakhir diubah:</span>
-              <span className="ml-2 text-gray-700">
-                {formatDate(tagihan.updated_at)}
-              </span>
+        <div className="bg-white rounded-lg shadow">
+          <div className="p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {/* dibuat_oleh */}
+              {tagihan.dibuat_oleh && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 mb-2">
+                    Ditambahkan Oleh
+                  </label>
+                  <div className="flex items-start gap-3 bg-gray-50 p-3 rounded-lg">
+                    <div className="bg-cyan-100 p-2 rounded-full shrink-0">
+                      <User size={16} className="text-cyan-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {tagihan.dibuat_oleh.name}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {tagihan.dibuat_oleh.email}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {formatDate(tagihan.created_at)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* diubah_oleh */}
+              {tagihan.diubah_oleh && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 mb-2">
+                    Terakhir Diubah Oleh
+                  </label>
+                  <div className="flex items-start gap-3 bg-gray-50 p-3 rounded-lg">
+                    <div className="bg-yellow-100 p-2 rounded-full shrink-0">
+                      <User size={16} className="text-yellow-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {tagihan.diubah_oleh.name}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {tagihan.diubah_oleh.email}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {formatDate(tagihan.diubah_oleh.diubah_pada)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
