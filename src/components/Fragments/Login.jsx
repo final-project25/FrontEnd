@@ -57,6 +57,7 @@ const FormLogin = () => {
         email: formData.email,
         password: formData.password,
       });
+      console.log("LOGIN RESPONSE:", res.data);
 
       const { token, user } = res.data;
 
@@ -68,7 +69,7 @@ const FormLogin = () => {
         succesError(res.data.message || "Login berhasil");
         setFormData({ email: "", password: "" });
 
-        setTimeout(() => navigate("/dashboard"), 1000);
+        setTimeout(() => navigate("/rekrutmen"), 1000);
       } else {
         setAuthError("Token tidak ditemukan, coba lagi.");
       }

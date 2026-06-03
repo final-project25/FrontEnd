@@ -1,4 +1,12 @@
-import { ArrowLeft, Mail, Calendar, Building2, User } from "lucide-react";
+import {
+  ArrowLeft,
+  Mail,
+  Calendar,
+  Building2,
+  Phone,
+  User,
+  Eye,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import api from "../../../services/api";
 import { useNavigate, useParams } from "react-router-dom";
@@ -104,7 +112,7 @@ const DetailKontakPage = () => {
         </div>
 
         <div className="p-6 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <h3 className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             Informasi Pengirim
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -115,6 +123,21 @@ const DetailKontakPage = () => {
                 <p className="text-base font-medium text-gray-900">
                   {kontak.nama}
                 </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <Phone className="text-gray-400 mt-1" size={20} />
+              <div>
+                <p className="text-sm text-gray-600">No. WhatsApp</p>
+                <a
+                  href={`https://wa.me/${kontak.no_wa}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-base font-medium text-green-600 hover:underline"
+                >
+                  {kontak.no_wa || "-"}
+                </a>
               </div>
             </div>
 
@@ -151,6 +174,26 @@ const DetailKontakPage = () => {
             <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
               {kontak.isi}
             </p>
+          </div>
+        </div>
+
+        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+            <div className="flex items-start gap-3">
+              <User className="text-gray-400 mt-1" size={20} />
+              <div>
+                <p className="text-sm text-gray-600">Dibaca Oleh</p>
+                <p className="text-base font-medium text-gray-900">
+                  {kontak.dibaca_oleh?.name || "-"}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center">
+              <span className="text-gray-500">Dibaca pada:</span>
+              <span className="ml-2  text-gray-700">
+                {formatDate(kontak.dibaca_pada)}
+              </span>
+            </div>
           </div>
         </div>
       </div>

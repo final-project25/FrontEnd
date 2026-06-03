@@ -10,8 +10,7 @@ const KontakPage = () => {
   const [kontak, setKontak] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("semua"); // semua, pending, dibaca
-
+  const [filterStatus, setFilterStatus] = useState("semua"); 
   useEffect(() => {
     getAllKontak();
   }, []);

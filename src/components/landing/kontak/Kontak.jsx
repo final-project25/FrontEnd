@@ -26,6 +26,7 @@ const ContactPage = () => {
   const [formData, setFormData] = useState({
     nama: "",
     email: "",
+    no_wa: "",
     perusahaan: "",
     subjek: "",
     isi: "",
@@ -76,6 +77,7 @@ const ContactPage = () => {
       setFormData({
         nama: "",
         email: "",
+        no_wa: "",
         perusahaan: "",
         subjek: "",
         isi: "",
@@ -342,25 +344,48 @@ const ContactPage = () => {
                       </div>
                     </div>
                   </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        No. WhatsApp
+                      </label>
+                      <div className="relative">
+                        <Phone
+                          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                          size={20}
+                        />
+                        <input
+                          type="text"
+                          name="no_wa"
+                          value={formData.no_wa}
+                          onChange={handleChange}
+                          placeholder="08xxxxxxxxxx"
+                          disabled={loading}
+                          className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 transition-all"
+                        />
+                      </div>
+                    </div>
 
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Perusahaan (Opsional)
-                    </label>
-                    <div className="relative">
-                      <Building2
-                        className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                        size={20}
-                      />
-                      <input
-                        type="text"
-                        name="perusahaan"
-                        value={formData.perusahaan}
-                        onChange={handleChange}
-                        placeholder="PT Nama Perusahaan"
-                        disabled={loading}
-                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 transition-all"
-                      />
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Perusahaan{" "}
+                        <span className="text-gray-400">(Opsional)</span>
+                      </label>
+                      <div className="relative">
+                        <Building2
+                          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                          size={20}
+                        />
+                        <input
+                          type="text"
+                          name="perusahaan"
+                          value={formData.perusahaan}
+                          onChange={handleChange}
+                          placeholder="PT Nama Perusahaan"
+                          disabled={loading}
+                          className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 transition-all"
+                        />
+                      </div>
                     </div>
                   </div>
 

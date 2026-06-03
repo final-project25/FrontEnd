@@ -2,8 +2,9 @@ import { ArrowLeft, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import api from "../../../services/api";
 import { useNavigate, useParams } from "react-router-dom";
-import { succesError } from "../../../utils/notify";
+import { showError, succesError } from "../../../utils/notify";
 import { ClipLoader } from "react-spinners";
+import { mapBackendErrors } from "../../../utils/errorHandler";
 
 const FieldError = ({ message }) =>
   message ? <p className="text-red-500 text-xs mt-1">{message}</p> : null;
@@ -72,7 +73,6 @@ const UpdateKaryawanPage = () => {
       });
     } catch (error) {
       console.error(error);
-      const { showError } = await import("../../../utils/notify");
       showError("Gagal memuat data karyawan");
     } finally {
       setLoading(false);
@@ -161,27 +161,34 @@ const UpdateKaryawanPage = () => {
       succesError("Data Karyawan berhasil diperbarui");
       navigate("/karyawan");
     } catch (error) {
-      console.error(error);
-
-      if (error.response?.status === 422) {
-        const backendErrors = error.response.data?.errors;
-        if (backendErrors) {
-          const mapped = { ...INITIAL_ERRORS };
-          Object.keys(backendErrors).forEach((key) => {
-            if (Object.prototype.hasOwnProperty.call(mapped, key)) {
-              mapped[key] = backendErrors[key][0];
+          console.error(error);
+    
+          if (error.response?.status === 422) {
+            const backendErrors = error.response?.data?.errors;
+    
+            if (backendErrors) {
+              setErrors((prev) => ({
+                ...prev,
+                ...mapBackendErrors(backendErrors),
+              }));
             }
-          });
-          setErrors(mapped);
+    
+            return;
+          }
+          showError(
+            error.response?.data?.message || "Gagal memperbarui data karyawan",
+          );
+        } finally {
+          setLoading(false);
         }
-      } else {
-        const { showError } = await import("../../../utils/notify");
-        showError(error.response?.data?.message || "Gagal memperbarui data karyawan");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+      };
+
+  const handleNumberOnly = (e) => {
+  const { name, value } = e.target;
+  if (!/^\d*$/.test(value)) return;
+  setFormData((prev) => ({ ...prev, [name]: value }));
+  setErrors((prev) => ({ ...prev, [name]: "" }));
+};
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -259,7 +266,7 @@ const UpdateKaryawanPage = () => {
                   type="text"
                   name="nik"
                   value={formData.nik}
-                  onChange={handleChange}
+                  onChange={handleNumberOnly}
                   placeholder="16 digit NIK"
                   maxLength="16"
                   className={inputClass("nik")}
@@ -379,7 +386,7 @@ const UpdateKaryawanPage = () => {
                   type="text"
                   name="no_wa"
                   value={formData.no_wa}
-                  onChange={handleChange}
+                  onChange={handleNumberOnly}
                   placeholder="08xxxxxxxxxx"
                   maxLength="13"
                   className={inputClass("no_wa")}
@@ -395,7 +402,7 @@ const UpdateKaryawanPage = () => {
                   type="text"
                   name="no_rek_bri"
                   value={formData.no_rek_bri}
-                  onChange={handleChange}
+                  onChange={handleNumberOnly}
                   placeholder="Masukkan nomor rekening BRI"
                   className={inputClass("no_rek_bri")}
                 />

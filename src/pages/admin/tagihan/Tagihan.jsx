@@ -11,43 +11,52 @@ const TagihanPage = () => {
   const [loading, setLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
 
+  // State pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [meta, setMeta] = useState(null);
+  const [links, setLinks] = useState(null);
+
   // State untuk filter export (periode awal & akhir)
   const [periodeAwal, setPeriodeAwal] = useState("");
   const [periodeAkhir, setPeriodeAkhir] = useState("");
 
-  useEffect(() => {
-    const getAllTagihan = async () => {
-      try {
-        setLoading(true);
-        const response = await api.get("/tagihan");
-        setTagihan(response.data.data);
-      } catch (error) {
-        console.log(error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // State search
+  const [search, setSearch] = useState("");
 
-    getAllTagihan();
+  const getAllTagihan = async (page = 1) => {
+    try {
+      setLoading(true);
+      const response = await api.get(`/tagihan?page=${page}`);
+      setTagihan(response.data.data);
+      setMeta(response.data.meta);
+      setLinks(response.data.links);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    getAllTagihan(currentPage);
 
     const today = new Date();
     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
     const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-    setPeriodeAwal(firstDay.toISOString().split("T")[0]); // Format: YYYY-MM-DD
+    setPeriodeAwal(firstDay.toISOString().split("T")[0]);
     setPeriodeAkhir(lastDay.toISOString().split("T")[0]);
-  }, []);
+  }, [currentPage]);
 
   const handleDelete = async (id) => {
     const confirmDelete = window.confirm(
-      "Apakah Anda yakin ingin menghapus tagihan ini?",
+      "Apakah Anda yakin ingin menghapus tagihan ini?"
     );
-
     if (!confirmDelete) return;
 
     try {
       await api.delete(`/tagihan/${id}`);
-      setTagihan((prev) => prev.filter((item) => item.id !== id));
+      getAllTagihan(currentPage);
       succesError("Data tagihan berhasil dihapus");
     } catch (error) {
       console.log(error);
@@ -60,7 +69,6 @@ const TagihanPage = () => {
       showError("Mohon pilih periode awal dan periode akhir");
       return;
     }
-
     if (new Date(periodeAwal) > new Date(periodeAkhir)) {
       showError("Periode awal tidak boleh lebih besar dari periode akhir");
       return;
@@ -68,27 +76,21 @@ const TagihanPage = () => {
 
     try {
       setExportLoading(true);
-
       const formattedPeriodeAwal = periodeAwal.replace(/-/g, "/");
       const formattedPeriodeAkhir = periodeAkhir.replace(/-/g, "/");
 
       const response = await api.get(
         `/tagihan/export/excel?periode_awal=${formattedPeriodeAwal}&periode_akhir=${formattedPeriodeAkhir}`,
-        {
-          responseType: "blob",
-        },
+        { responseType: "blob" }
       );
 
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
-
       const fileName = `Tagihan_${periodeAwal}_to_${periodeAkhir}.xlsx`;
       link.setAttribute("download", fileName);
-
       document.body.appendChild(link);
       link.click();
-
       link.parentNode.removeChild(link);
       window.URL.revokeObjectURL(url);
 
@@ -97,7 +99,7 @@ const TagihanPage = () => {
       console.log(error);
       showError(
         error.response?.data?.message ||
-          "Gagal mengexport data. Pastikan ada data tagihan untuk periode yang dipilih.",
+          "Gagal mengexport data. Pastikan ada data tagihan untuk periode yang dipilih."
       );
     } finally {
       setExportLoading(false);
@@ -124,6 +126,20 @@ const TagihanPage = () => {
     }).format(amount);
   };
 
+  // Filter tagihan berdasarkan search
+  const filteredTagihan = tagihan.filter((t) => {
+    const q = search.toLowerCase();
+    return (
+      t.karyawan?.nama_lengkap?.toLowerCase().includes(q) ||
+      t.karyawan?.nomor_induk?.toLowerCase().includes(q) ||
+      t.karyawan?.nik?.toLowerCase().includes(q)
+    );
+  });
+
+  // Generate page numbers dari meta.links
+  const pageNumbers =
+    meta?.links?.filter((l) => l.page !== null).map((l) => l.page) || [];
+
   return (
     <div>
       <div className="mb-6">
@@ -144,6 +160,8 @@ const TagihanPage = () => {
               <input
                 type="text"
                 placeholder="Cari nama, nomor induk, atau NIK..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
               />
             </div>
@@ -157,13 +175,12 @@ const TagihanPage = () => {
             </button>
           </div>
 
+          {/* Export Excel Section */}
           <div className="border-t border-gray-200 pt-4">
             <div className="flex flex-col md:flex-row md:items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-700">
-                  Export Excel:
-                </span>
-              </div>
+              <span className="text-sm font-medium text-gray-700">
+                Export Excel:
+              </span>
 
               <div className="flex items-center gap-2">
                 <label className="text-sm text-gray-600">Periode Awal:</label>
@@ -214,6 +231,7 @@ const TagihanPage = () => {
         </div>
       </div>
 
+      {/* Tabel */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -238,7 +256,7 @@ const TagihanPage = () => {
                   Upah Diterima Karyawan
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Total Diterima
+                  Total Tagihan
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Aksi
@@ -248,53 +266,48 @@ const TagihanPage = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan="9" className="px-6 py-8">
+                  <td colSpan="8" className="px-6 py-8">
                     <div className="flex items-center justify-center gap-2">
                       <ClipLoader color="grey" loading={true} size={20} />
                       <span className="text-gray-600">Memuat data...</span>
                     </div>
                   </td>
                 </tr>
-              ) : tagihan.length === 0 ? (
+              ) : filteredTagihan.length === 0 ? (
                 <tr>
                   <td
-                    colSpan="9"
+                    colSpan="8"
                     className="px-6 py-8 text-center text-gray-500"
                   >
                     Tidak ada data tagihan
                   </td>
                 </tr>
               ) : (
-                tagihan.map((t, index) => (
+                filteredTagihan.map((t, index) => (
                   <tr key={t.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {index + 1}
+                      {/* Nomor urut tetap benar meski paginasi */}
+                      {(meta ? (meta.current_page - 1) * meta.per_page : 0) +
+                        index +
+                        1}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {t.nama}
+                      {t.karyawan?.nama_lengkap ?? "-"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {t.posisi}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
+                      {t.karyawan?.posisi?.replace(/_/g, " ") ?? "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {t.periode_awal && t.periode_akhir ? (
-                        <>
-                          {formatDate(t.periode_awal)}
-                          <br />-<br />
-                          {formatDate(t.periode_akhir)}
-                        </>
-                      ) : (
-                        "-"
-                      )}
+                      {t.bulan_tahun ?? "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {t.jumlah_hari_kerja} hari
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                      {formatCurrency(t.upah_yang_diterima_pekerja)}
+                      {formatCurrency(t.upah_diterima_pekerja)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-semibold">
-                      {formatCurrency(t.total_diterima)}
+                      {formatCurrency(t.upah_total)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <div className="flex items-center gap-2">
@@ -305,7 +318,6 @@ const TagihanPage = () => {
                         >
                           <Eye size={18} />
                         </button>
-
                         <button
                           onClick={() => navigate(`/update-tagihan/${t.id}`)}
                           className="text-yellow-600 hover:text-yellow-800"
@@ -330,32 +342,46 @@ const TagihanPage = () => {
         </div>
       </div>
 
+      {/* Pagination */}
       <div className="mt-4 flex items-center justify-between">
         <div className="text-sm text-gray-600">
-          Menampilkan {tagihan.length} data tagihan
+          {meta
+            ? `Menampilkan ${meta.from ?? 0}–${meta.to ?? 0} dari ${meta.total} data tagihan`
+            : `Menampilkan ${tagihan.length} data tagihan`}
         </div>
 
         <div className="flex items-center gap-2">
           <button
-            disabled
+            onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+            disabled={!links?.prev}
             className="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Previous
           </button>
 
           <div className="flex items-center gap-1">
-            <button className="px-3 py-1 border rounded-lg text-sm bg-cyan-600 text-white border-cyan-600">
-              1
-            </button>
-            <button className="px-3 py-1 border rounded-lg text-sm border-gray-300 hover:bg-gray-50">
-              2
-            </button>
-            <button className="px-3 py-1 border rounded-lg text-sm border-gray-300 hover:bg-gray-50">
-              3
-            </button>
+            {pageNumbers.map((page) => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`px-3 py-1 border rounded-lg text-sm ${
+                  page === meta?.current_page
+                    ? "bg-cyan-600 text-white border-cyan-600"
+                    : "border-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                {page}
+              </button>
+            ))}
           </div>
 
-          <button className="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+          <button
+            onClick={() =>
+              setCurrentPage((p) => Math.min(p + 1, meta?.last_page ?? p))
+            }
+            disabled={!links?.next}
+            className="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             Next
           </button>
         </div>
