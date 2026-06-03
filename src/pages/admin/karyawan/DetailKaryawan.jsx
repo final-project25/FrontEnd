@@ -1,6 +1,14 @@
 import {
-  ArrowLeft, Edit, Trash2, Calendar,
-  Mail, Phone, MapPin, Briefcase, CreditCard, User,
+  ArrowLeft,
+  Edit,
+  Trash2,
+  Calendar,
+  Mail,
+  Phone,
+  MapPin,
+  Briefcase,
+  CreditCard,
+  User,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import api from "../../../services/api";
@@ -11,15 +19,20 @@ import { ClipLoader } from "react-spinners";
 const formatDate = (dateString) => {
   if (!dateString) return "-";
   return new Date(dateString).toLocaleDateString("id-ID", {
-    day: "2-digit", month: "long", year: "numeric",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
   });
 };
 
 const formatDateTime = (dateString) => {
   if (!dateString) return "-";
   return new Date(dateString).toLocaleString("id-ID", {
-    day: "2-digit", month: "long", year: "numeric",
-    hour: "2-digit", minute: "2-digit",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 };
 
@@ -91,8 +104,12 @@ const DetailKaryawanPage = () => {
         {/* ✅ FIX: responsive — stack di mobile */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Detail Karyawan</h1>
-            <p className="text-gray-600 mt-1">Informasi lengkap data karyawan</p>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Detail Karyawan
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Informasi lengkap data karyawan
+            </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -115,46 +132,67 @@ const DetailKaryawanPage = () => {
 
       {/* Status Badge */}
       <div className="mb-6">
-        <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold ${
-          isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-        }`}>
+        <span
+          className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold ${
+            isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+          }`}
+        >
           {isActive ? "● Aktif" : "● Tidak Aktif"}
         </span>
       </div>
 
       <div className="space-y-6">
-
         {/* Data Pribadi */}
         <div className="bg-white rounded-lg shadow">
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Data Pribadi</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Data Pribadi
+            </h2>
           </div>
           <div className="p-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Nomor Induk</label>
-                <p className="text-base text-gray-900 font-medium">{karyawan.nomor_induk || "-"}</p>
+                <label className="block text-sm font-medium text-gray-500 mb-1">
+                  Nomor Induk
+                </label>
+                <p className="text-base text-gray-900 font-medium">
+                  {karyawan.nomor_induk || "-"}
+                </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Nama Lengkap</label>
-                <p className="text-base text-gray-900 font-medium">{karyawan.nama_lengkap || "-"}</p>
+                <label className="block text-sm font-medium text-gray-500 mb-1">
+                  Nama Lengkap
+                </label>
+                <p className="text-base text-gray-900 font-medium">
+                  {karyawan.nama_lengkap || "-"}
+                </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">NIK (No. KTP)</label>
+                <label className="block text-sm font-medium text-gray-500 mb-1">
+                  NIK (No. KTP)
+                </label>
                 {/* ✅ FIX: break-all agar NIK tidak overflow di mobile */}
-                <p className="text-base text-gray-900 break-all">{karyawan.nik || "-"}</p>
+                <p className="text-base text-gray-900 break-all">
+                  {karyawan.nik || "-"}
+                </p>
               </div>
 
               {/* Field opsional — hanya tampil jika ada datanya */}
               {karyawan.tempat_lahir && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">Tempat Lahir</label>
-                  <p className="text-base text-gray-900">{karyawan.tempat_lahir}</p>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">
+                    Tempat Lahir
+                  </label>
+                  <p className="text-base text-gray-900">
+                    {karyawan.tempat_lahir}
+                  </p>
                 </div>
               )}
               {karyawan.tanggal_lahir && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">Tanggal Lahir</label>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">
+                    Tanggal Lahir
+                  </label>
                   <div className="flex items-center gap-2 text-gray-900">
                     <Calendar size={16} className="text-gray-400 shrink-0" />
                     <span>{formatDate(karyawan.tanggal_lahir)}</span>
@@ -163,7 +201,9 @@ const DetailKaryawanPage = () => {
               )}
               {karyawan.jenis_kelamin && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">Jenis Kelamin</label>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">
+                    Jenis Kelamin
+                  </label>
                   <p className="text-base text-gray-900">
                     {karyawan.jenis_kelamin === "L" ? "Laki-laki" : "Perempuan"}
                   </p>
@@ -171,7 +211,9 @@ const DetailKaryawanPage = () => {
               )}
 
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-500 mb-1">Alamat Lengkap</label>
+                <label className="block text-sm font-medium text-gray-500 mb-1">
+                  Alamat Lengkap
+                </label>
                 <div className="flex items-start gap-2 text-gray-900">
                   <MapPin size={16} className="text-gray-400 mt-1 shrink-0" />
                   <p className="text-base">{karyawan.alamat || "-"}</p>
@@ -180,8 +222,12 @@ const DetailKaryawanPage = () => {
 
               {karyawan.pendidikan_terakhir && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">Pendidikan Terakhir</label>
-                  <p className="text-base text-gray-900">{karyawan.pendidikan_terakhir}</p>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">
+                    Pendidikan Terakhir
+                  </label>
+                  <p className="text-base text-gray-900">
+                    {karyawan.pendidikan_terakhir}
+                  </p>
                 </div>
               )}
             </div>
@@ -191,19 +237,27 @@ const DetailKaryawanPage = () => {
         {/* Data Kepegawaian */}
         <div className="bg-white rounded-lg shadow">
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Data Kepegawaian</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Data Kepegawaian
+            </h2>
           </div>
           <div className="p-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Posisi/Jabatan</label>
+                <label className="block text-sm font-medium text-gray-500 mb-1">
+                  Posisi/Jabatan
+                </label>
                 <div className="flex items-center gap-2">
                   <Briefcase size={16} className="text-gray-400 shrink-0" />
-                  <p className="text-base text-gray-900 font-medium">{formatPosisi(karyawan.posisi)}</p>
+                  <p className="text-base text-gray-900 font-medium">
+                    {formatPosisi(karyawan.posisi)}
+                  </p>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Tanggal Masuk</label>
+                <label className="block text-sm font-medium text-gray-500 mb-1">
+                  Tanggal Masuk
+                </label>
                 <div className="flex items-center gap-2 text-gray-900">
                   <Calendar size={16} className="text-gray-400 shrink-0" />
                   <span>{formatDate(karyawan.tanggal_masuk)}</span>
@@ -213,7 +267,9 @@ const DetailKaryawanPage = () => {
               {/* ✅ TAMBAH: tanggal keluar hanya tampil jika ada */}
               {karyawan.tanggal_keluar && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">Tanggal Keluar</label>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">
+                    Tanggal Keluar
+                  </label>
                   <div className="flex items-center gap-2 text-gray-900">
                     <Calendar size={16} className="text-gray-400 shrink-0" />
                     <span>{formatDate(karyawan.tanggal_keluar)}</span>
@@ -222,10 +278,16 @@ const DetailKaryawanPage = () => {
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Status Kepegawaian</label>
-                <span className={`inline-flex px-3 py-1 rounded-full text-sm font-semibold ${
-                  isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                }`}>
+                <label className="block text-sm font-medium text-gray-500 mb-1">
+                  Status Kepegawaian
+                </label>
+                <span
+                  className={`inline-flex px-3 py-1 rounded-full text-sm font-semibold ${
+                    isActive
+                      ? "bg-green-100 text-green-800"
+                      : "bg-red-100 text-red-800"
+                  }`}
+                >
                   {isActive ? "Aktif" : "Tidak Aktif"}
                 </span>
               </div>
@@ -241,7 +303,9 @@ const DetailKaryawanPage = () => {
           <div className="p-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Email</label>
+                <label className="block text-sm font-medium text-gray-500 mb-1">
+                  Email
+                </label>
                 <div className="flex items-center gap-2">
                   <Mail size={16} className="text-gray-400 shrink-0" />
                   <a
@@ -253,7 +317,9 @@ const DetailKaryawanPage = () => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">No. WhatsApp</label>
+                <label className="block text-sm font-medium text-gray-500 mb-1">
+                  No. WhatsApp
+                </label>
                 <div className="flex items-center gap-2">
                   <Phone size={16} className="text-gray-400 shrink-0" />
                   <a
@@ -268,10 +334,14 @@ const DetailKaryawanPage = () => {
               </div>
               {karyawan.no_rek_bri && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">No. Rekening BRI</label>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">
+                    No. Rekening BRI
+                  </label>
                   <div className="flex items-center gap-2">
                     <CreditCard size={16} className="text-gray-400 shrink-0" />
-                    <p className="text-base text-gray-900 break-all">{karyawan.no_rek_bri}</p>
+                    <p className="text-base text-gray-900 break-all">
+                      {karyawan.no_rek_bri}
+                    </p>
                   </div>
                 </div>
               )}
@@ -282,23 +352,32 @@ const DetailKaryawanPage = () => {
         {/* ✅ TAMBAH: section baru — Informasi Audit dari response API */}
         <div className="bg-white rounded-lg shadow">
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Informasi Audit</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Informasi Audit
+            </h2>
           </div>
           <div className="p-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-
               {/* ditambahkan_oleh */}
               {karyawan.ditambahkan_oleh && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-2">Ditambahkan Oleh</label>
+                  <label className="block text-sm font-medium text-gray-500 mb-2">
+                    Ditambahkan Oleh
+                  </label>
                   <div className="flex items-start gap-3 bg-gray-50 p-3 rounded-lg">
                     <div className="bg-cyan-100 p-2 rounded-full shrink-0">
                       <User size={16} className="text-cyan-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{karyawan.ditambahkan_oleh.name}</p>
-                      <p className="text-xs text-gray-500">{karyawan.ditambahkan_oleh.email}</p>
-                      <p className="text-xs text-gray-400 mt-1">{formatDateTime(karyawan.created_at)}</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {karyawan.ditambahkan_oleh.name}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {karyawan.ditambahkan_oleh.email}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {formatDateTime(karyawan.created_at)}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -307,14 +386,20 @@ const DetailKaryawanPage = () => {
               {/* diubah_oleh */}
               {karyawan.diubah_oleh && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-2">Terakhir Diubah Oleh</label>
+                  <label className="block text-sm font-medium text-gray-500 mb-2">
+                    Terakhir Diubah Oleh
+                  </label>
                   <div className="flex items-start gap-3 bg-gray-50 p-3 rounded-lg">
                     <div className="bg-yellow-100 p-2 rounded-full shrink-0">
                       <User size={16} className="text-yellow-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{karyawan.diubah_oleh.name}</p>
-                      <p className="text-xs text-gray-500">{karyawan.diubah_oleh.email}</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {karyawan.diubah_oleh.name}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {karyawan.diubah_oleh.email}
+                      </p>
                       <p className="text-xs text-gray-400 mt-1">
                         {formatDateTime(karyawan.diubah_oleh.diubah_pada)}
                       </p>
@@ -322,25 +407,9 @@ const DetailKaryawanPage = () => {
                   </div>
                 </div>
               )}
-
             </div>
           </div>
         </div>
-
-        {/* Metadata */}
-        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-gray-500">Dibuat pada:</span>
-              <span className="ml-2 text-gray-700">{formatDateTime(karyawan.created_at)}</span>
-            </div>
-            <div>
-              <span className="text-gray-500">Terakhir diubah:</span>
-              <span className="ml-2 text-gray-700">{formatDateTime(karyawan.updated_at)}</span>
-            </div>
-          </div>
-        </div>
-
       </div>
     </div>
   );
