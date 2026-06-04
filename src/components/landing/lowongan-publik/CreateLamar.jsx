@@ -7,15 +7,31 @@ import {
   CheckCircle,
   Copy,
   Download,
-  Briefcase, // TAMBAH INI
+  Briefcase,
 } from "lucide-react";
-import { useState, useEffect } from "react"; // TAMBAH useEffect
+import { useState, useEffect } from "react";
 import api from "../../../services/api";
 import { useNavigate, useParams } from "react-router-dom";
 import { showError, succesError } from "../../../utils/notify";
 import { ClipLoader } from "react-spinners";
 import Navbar from "../../layouts/Navbar";
 import Footer from "../../layouts/Footer";
+
+const INITIAL_ERRORS = {
+  nik: "",
+  nama_lengkap: "",
+  no_wa: "",
+  posisi_dilamar: "",
+  alamat: "",
+  foto_ktp: "",
+  foto_kk: "",
+  foto_skck: "",
+  pas_foto: "",
+  surat_sehat: "",
+  surat_anti_narkoba: "",
+  surat_lamaran: "",
+  cv: "",
+};
 
 const CreateLamaranPage = () => {
   const navigate = useNavigate();
@@ -34,6 +50,8 @@ const CreateLamaranPage = () => {
     no_wa: "",
     alamat: "",
   });
+
+  const [errors, setErrors] = useState(INITIAL_ERRORS);
 
   const [files, setFiles] = useState({
     foto_ktp: null,
@@ -55,7 +73,6 @@ const CreateLamaranPage = () => {
     surat_anti_narkoba: null,
   });
 
-  // TAMBAH useEffect INI
   useEffect(() => {
     if (id) {
       fetchLowongan();
@@ -67,7 +84,6 @@ const CreateLamaranPage = () => {
       setLoadingLowongan(true);
       const response = await api.get(`/lowongan-kerja/${id}`);
       const lowonganData = response.data.data;
-
       setFormData((prev) => ({
         ...prev,
         posisi_dilamar: lowonganData.posisi || "",
@@ -93,21 +109,20 @@ const CreateLamaranPage = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    // Clear error saat user mulai mengetik
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
   };
 
   const handleFileChange = (e, fieldName) => {
     const file = e.target.files[0];
-
     if (!file) return;
 
     const imageFields = [
-      "foto_ktp",
-      "foto_kk",
-      "foto_skck",
-      "pas_foto",
-      "surat_sehat",
-      "surat_anti_narkoba",
+      "foto_ktp", "foto_kk", "foto_skck",
+      "pas_foto", "surat_sehat", "surat_anti_narkoba",
     ];
     const pdfFields = ["surat_lamaran", "cv"];
 
@@ -133,57 +148,74 @@ const CreateLamaranPage = () => {
       }
     }
 
-    setFiles({ ...files, [fieldName]: file });
+    setFiles((prev) => ({ ...prev, [fieldName]: file }));
+
+    // Clear error file saat sudah diupload
+    if (errors[fieldName]) {
+      setErrors((prev) => ({ ...prev, [fieldName]: "" }));
+    }
 
     if (imageFields.includes(fieldName)) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPreviews({ ...previews, [fieldName]: reader.result });
+        setPreviews((prev) => ({ ...prev, [fieldName]: reader.result }));
       };
       reader.readAsDataURL(file);
     }
   };
 
   const removeFile = (fieldName) => {
-    setFiles({ ...files, [fieldName]: null });
-    setPreviews({ ...previews, [fieldName]: null });
+    setFiles((prev) => ({ ...prev, [fieldName]: null }));
+    setPreviews((prev) => ({ ...prev, [fieldName]: null }));
+  };
+
+  const validate = () => {
+    const newErrors = {};
+
+    if (!formData.nik.trim()) {
+      newErrors.nik = "NIK wajib diisi";
+    } else if (!/^\d{16}$/.test(formData.nik)) {
+      newErrors.nik = "NIK harus 16 digit angka";
+    }
+
+    if (!formData.nama_lengkap.trim()) {
+      newErrors.nama_lengkap = "Nama lengkap wajib diisi";
+    }
+
+    if (!formData.no_wa.trim()) {
+      newErrors.no_wa = "Nomor WhatsApp wajib diisi";
+    } else if (!/^(\+62|62|0)[0-9]{9,13}$/.test(formData.no_wa)) {
+      newErrors.no_wa = "Nomor WhatsApp tidak valid (contoh: 08xxxxxxxxxx)";
+    }
+
+    if (!formData.alamat.trim()) {
+      newErrors.alamat = "Alamat wajib diisi";
+    }
+
+    // Validasi semua file wajib
+    const requiredFiles = [
+      "foto_ktp", "foto_kk", "foto_skck", "pas_foto",
+      "surat_sehat", "surat_anti_narkoba", "surat_lamaran", "cv",
+    ];
+    requiredFiles.forEach((field) => {
+      if (!files[field]) {
+        newErrors[field] = "Dokumen ini wajib diupload";
+      }
+    });
+
+    setErrors((prev) => ({ ...prev, ...newErrors }));
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.lowongan_kerja_id) {
-      showError(
-        "ID Lowongan tidak ditemukan. Mohon akses melalui halaman lowongan.",
-      );
-      return;
-    }
-
-    if (
-      !formData.nik ||
-      !formData.nama_lengkap ||
-      !formData.posisi_dilamar ||
-      !formData.no_wa ||
-      !formData.alamat
-    ) {
-      showError("Mohon lengkapi semua data pribadi yang wajib diisi");
-      return;
-    }
-
-    const requiredFiles = [
-      "foto_ktp",
-      "foto_kk",
-      "foto_skck",
-      "pas_foto",
-      "surat_sehat",
-      "surat_anti_narkoba",
-      "surat_lamaran",
-      "cv",
-    ];
-    const missingFiles = requiredFiles.filter((field) => !files[field]);
-
-    if (missingFiles.length > 0) {
-      showError("Mohon upload semua dokumen yang diperlukan");
+    if (!validate()) {
+      // Scroll ke error pertama
+      const firstError = document.querySelector(".text-red-500");
+      if (firstError) {
+        firstError.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
       return;
     }
 
@@ -191,11 +223,9 @@ const CreateLamaranPage = () => {
       setLoading(true);
 
       const submitData = new FormData();
-
       Object.keys(formData).forEach((key) => {
         submitData.append(key, formData[key]);
       });
-
       Object.keys(files).forEach((key) => {
         if (files[key]) {
           submitData.append(key, files[key]);
@@ -203,16 +233,10 @@ const CreateLamaranPage = () => {
       });
 
       const response = await api.post("/rekruitmen", submitData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+        headers: { "Content-Type": "multipart/form-data" },
       });
-      console.log(response.data);
 
       const kode = response.data.data?.token_pendaftaran;
-
-      console.log(kode);
-
       if (kode) {
         setKodeLamaran(kode);
         setShowSuccessModal(true);
@@ -220,9 +244,24 @@ const CreateLamaranPage = () => {
         succesError("Lamaran berhasil dikirim");
         navigate("/lowongan-publik");
       }
-
-      succesError("Lamaran berhasil dikirim");
     } catch (error) {
+      if (error.response?.status === 422) {
+        const backendErrors = error.response.data.errors;
+        const mappedErrors = {};
+        Object.keys(backendErrors).forEach((key) => {
+          mappedErrors[key] = backendErrors[key][0];
+        });
+        setErrors((prev) => ({ ...prev, ...mappedErrors }));
+
+        // Scroll ke error pertama dari backend
+        setTimeout(() => {
+          const firstError = document.querySelector(".text-red-500");
+          if (firstError) {
+            firstError.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        }, 100);
+        return;
+      }
       showError(error.response?.data?.message || "Gagal mengirim lamaran");
     } finally {
       setLoading(false);
@@ -250,7 +289,7 @@ const CreateLamaranPage = () => {
           `Akses: ${window.location.origin}/cek-status-lamaran\n\n` +
           `Terima kasih telah melamar!`,
       ],
-      { type: "text/plain" },
+      { type: "text/plain" }
     );
     element.href = URL.createObjectURL(file);
     element.download = `Kode_Lamaran_${kodeLamaran}.txt`;
@@ -260,9 +299,108 @@ const CreateLamaranPage = () => {
     succesError("Kode berhasil didownload!");
   };
 
+  // Helper komponen
+  const FieldError = ({ message }) =>
+    message ? <p className="text-red-500 text-xs mt-1">{message}</p> : null;
+
+  const inputClass = (field) =>
+    `w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent ${
+      errors[field] ? "border-red-500 bg-red-50" : "border-gray-300"
+    }`;
+
+  // FileUploadBox menerima errors sebagai prop agar bisa tampil border merah
+  const FileUploadBox = ({ label, name, accept, fileType, required = true }) => {
+    const isImage = [
+      "foto_ktp", "foto_kk", "foto_skck",
+      "pas_foto", "surat_sehat", "surat_anti_narkoba",
+    ].includes(name);
+
+    const hasError = !!errors[name];
+
+    return (
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          {label} {required && <span className="text-red-500">*</span>}
+        </label>
+
+        {!files[name] ? (
+          <label
+            className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+              hasError
+                ? "border-red-400 bg-red-50 hover:bg-red-100"
+                : "border-gray-300 bg-gray-50 hover:bg-gray-100"
+            }`}
+          >
+            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+              {isImage ? (
+                <Image className={`w-8 h-8 mb-2 ${hasError ? "text-red-400" : "text-gray-400"}`} />
+              ) : (
+                <FileText className={`w-8 h-8 mb-2 ${hasError ? "text-red-400" : "text-gray-400"}`} />
+              )}
+              <p className="mb-1 text-sm text-gray-500">
+                <span className="font-semibold">Klik untuk upload</span>
+              </p>
+              <p className="text-xs text-gray-400">
+                {fileType === "image" ? "PNG, JPG (Max. 2MB)" : "PDF (Max. 5MB)"}
+              </p>
+            </div>
+            <input
+              type="file"
+              accept={accept}
+              onChange={(e) => handleFileChange(e, name)}
+              className="hidden"
+            />
+          </label>
+        ) : (
+          <div className="border-2 border-green-300 bg-green-50 rounded-lg p-4">
+            {isImage && previews[name] ? (
+              <div className="space-y-2">
+                <img
+                  src={previews[name]}
+                  alt={label}
+                  className="w-full h-40 object-cover rounded"
+                />
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600 truncate flex-1">
+                    {files[name].name}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeFile(name)}
+                    className="ml-2 p-1 text-red-500 hover:bg-red-50 rounded"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <FileText className="w-8 h-8 text-red-500 shrink-0" />
+                  <span className="text-sm text-gray-600 truncate">
+                    {files[name].name}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeFile(name)}
+                  className="ml-2 p-1 text-red-500 hover:bg-red-50 rounded shrink-0"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Error message di dalam FileUploadBox, bukan di luar grid */}
+        <FieldError message={errors[name]} />
+      </div>
+    );
+  };
+
   const SuccessModal = () => (
     <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50 p-4">
-      {" "}
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
         <div className="flex justify-center mb-4">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
@@ -327,97 +465,6 @@ const CreateLamaranPage = () => {
     </div>
   );
 
-  const FileUploadBox = ({
-    label,
-    name,
-    accept,
-    fileType,
-    required = true,
-  }) => {
-    const isImage = [
-      "foto_ktp",
-      "foto_kk",
-      "foto_skck",
-      "pas_foto",
-      "surat_sehat",
-      "surat_anti_narkoba",
-    ].includes(name);
-
-    return (
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          {label} {required && <span className="text-red-500">*</span>}
-        </label>
-
-        {!files[name] ? (
-          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
-            <div className="flex flex-col items-center justify-center pt-5 pb-6">
-              {isImage ? (
-                <Image className="w-8 h-8 mb-2 text-gray-400" />
-              ) : (
-                <FileText className="w-8 h-8 mb-2 text-gray-400" />
-              )}
-              <p className="mb-2 text-sm text-gray-500">
-                <span className="font-semibold">Klik untuk upload</span>
-              </p>
-              <p className="text-xs text-gray-500">
-                {fileType === "image"
-                  ? "PNG, JPG (Max. 2MB)"
-                  : "PDF (Max. 5MB)"}
-              </p>
-            </div>
-            <input
-              type="file"
-              accept={accept}
-              onChange={(e) => handleFileChange(e, name)}
-              className="hidden"
-            />
-          </label>
-        ) : (
-          <div className="border-2 border-gray-300 rounded-lg p-4">
-            {isImage && previews[name] ? (
-              <div className="space-y-2">
-                <img
-                  src={previews[name]}
-                  alt={label}
-                  className="w-full h-40 object-cover rounded"
-                />
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 truncate flex-1">
-                    {files[name].name}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => removeFile(name)}
-                    className="ml-2 p-1 text-red-500 hover:bg-red-50 rounded"
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <FileText className="w-8 h-8 text-red-500 shrink-0" />
-                  <span className="text-sm text-gray-600 truncate">
-                    {files[name].name}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => removeFile(name)}
-                  className="ml-2 p-1 text-red-500 hover:bg-red-50 rounded shrink-0"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  };
-
   return (
     <>
       <Navbar />
@@ -444,11 +491,14 @@ const CreateLamaranPage = () => {
 
           <form onSubmit={handleSubmit}>
             <div className="bg-white rounded-lg shadow">
+
+              {/* Section 1: Data Pribadi */}
               <div className="p-6 border-b border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">
                   Data Pribadi
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       NIK (No. KTP) <span className="text-red-500">*</span>
@@ -460,9 +510,9 @@ const CreateLamaranPage = () => {
                       onChange={handleChange}
                       placeholder="16 digit NIK"
                       maxLength="16"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                      required
+                      className={inputClass("nik")}
                     />
+                    <FieldError message={errors.nik} />
                   </div>
 
                   <div>
@@ -489,9 +539,9 @@ const CreateLamaranPage = () => {
                       value={formData.nama_lengkap}
                       onChange={handleChange}
                       placeholder="Masukkan nama lengkap sesuai KTP"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                      required
+                      className={inputClass("nama_lengkap")}
                     />
+                    <FieldError message={errors.nama_lengkap} />
                   </div>
 
                   <div>
@@ -505,23 +555,25 @@ const CreateLamaranPage = () => {
                       onChange={handleChange}
                       placeholder="08xxxxxxxxxx"
                       maxLength="13"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                      required
+                      className={inputClass("no_wa")}
                     />
+                    <FieldError message={errors.no_wa} />
                   </div>
 
-                  {/* UBAH BAGIAN INI - DARI SELECT JADI DISPLAY */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Posisi yang Dilamar{" "}
-                      <span className="text-red-500">*</span>
+                      Posisi yang Dilamar <span className="text-red-500">*</span>
                     </label>
                     {loadingLowongan ? (
-                      <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 flex items-center justify-center">
+                      <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 flex items-center justify-center h-10">
                         <ClipLoader color="#0891b2" size={20} />
                       </div>
                     ) : (
-                      <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50">
+                      <div
+                        className={`w-full px-4 py-2 border rounded-lg bg-gray-50 ${
+                          errors.posisi_dilamar ? "border-red-500" : "border-gray-300"
+                        }`}
+                      >
                         <div className="flex items-center gap-2">
                           <Briefcase size={18} className="text-cyan-600" />
                           <span className="font-semibold text-gray-900">
@@ -530,12 +582,12 @@ const CreateLamaranPage = () => {
                         </div>
                       </div>
                     )}
-                    {/* Hidden input untuk submit */}
                     <input
                       type="hidden"
                       name="posisi_dilamar"
                       value={formData.posisi_dilamar}
                     />
+                    <FieldError message={errors.posisi_dilamar} />
                   </div>
 
                   <div className="md:col-span-2">
@@ -548,76 +600,43 @@ const CreateLamaranPage = () => {
                       value={formData.alamat}
                       onChange={handleChange}
                       placeholder="Masukkan alamat lengkap"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent resize-none"
-                      required
+                      className={inputClass("alamat")}
                     />
+                    <FieldError message={errors.alamat} />
                   </div>
+
                 </div>
               </div>
 
+              {/* Section 2: Upload Foto Dokumen */}
               <div className="p-6 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                <h2 className="text-lg font-semibold text-gray-900 mb-1">
                   Upload Foto Dokumen
                 </h2>
+                <p className="text-xs text-gray-400 mb-4">Format PNG/JPG, maksimal 2MB per file</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FileUploadBox
-                    label="Foto KTP"
-                    name="foto_ktp"
-                    accept="image/*"
-                    fileType="image"
-                  />
-                  <FileUploadBox
-                    label="Foto Kartu Keluarga (KK)"
-                    name="foto_kk"
-                    accept="image/*"
-                    fileType="image"
-                  />
-                  <FileUploadBox
-                    label="Foto SKCK"
-                    name="foto_skck"
-                    accept="image/*"
-                    fileType="image"
-                  />
-                  <FileUploadBox
-                    label="Pas Foto"
-                    name="pas_foto"
-                    accept="image/*"
-                    fileType="image"
-                  />
-                  <FileUploadBox
-                    label="Surat Keterangan Sehat"
-                    name="surat_sehat"
-                    accept="image/*"
-                    fileType="image"
-                  />
-                  <FileUploadBox
-                    label="Surat Bebas Narkoba"
-                    name="surat_anti_narkoba"
-                    accept="image/*"
-                    fileType="image"
-                  />
+                  {/* Error message ada di DALAM FileUploadBox, bukan di luar */}
+                  <FileUploadBox label="Foto KTP" name="foto_ktp" accept="image/*" fileType="image" />
+                  <FileUploadBox label="Foto Kartu Keluarga (KK)" name="foto_kk" accept="image/*" fileType="image" />
+                  <FileUploadBox label="Foto SKCK" name="foto_skck" accept="image/*" fileType="image" />
+                  <FileUploadBox label="Pas Foto" name="pas_foto" accept="image/*" fileType="image" />
+                  <FileUploadBox label="Surat Keterangan Sehat" name="surat_sehat" accept="image/*" fileType="image" />
+                  <FileUploadBox label="Surat Bebas Narkoba" name="surat_anti_narkoba" accept="image/*" fileType="image" />
                 </div>
               </div>
 
+              {/* Section 3: Upload PDF */}
               <div className="p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                <h2 className="text-lg font-semibold text-gray-900 mb-1">
                   Upload Surat-surat (PDF)
                 </h2>
+                <p className="text-xs text-gray-400 mb-4">Format PDF, maksimal 5MB per file</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FileUploadBox
-                    label="Surat Lamaran"
-                    name="surat_lamaran"
-                    accept=".pdf"
-                    fileType="pdf"
-                  />
-                  <FileUploadBox
-                    label="Curriculum Vitae (CV)"
-                    name="cv"
-                    accept=".pdf"
-                    fileType="pdf"
-                  />
+                  <FileUploadBox label="Surat Lamaran" name="surat_lamaran" accept=".pdf" fileType="pdf" />
+                  <FileUploadBox label="Curriculum Vitae (CV)" name="cv" accept=".pdf" fileType="pdf" />
                 </div>
               </div>
+
             </div>
 
             <div className="mt-6 flex items-center justify-end gap-4">
@@ -634,9 +653,7 @@ const CreateLamaranPage = () => {
                 className="flex items-center gap-2 bg-cyan-600 text-white px-6 py-2 rounded-lg hover:bg-cyan-700 transition-colors disabled:bg-cyan-400 disabled:cursor-not-allowed"
               >
                 {loading ? (
-                  <>
-                    <ClipLoader color="#ffffff" size={20} />
-                  </>
+                  <ClipLoader color="#ffffff" size={20} />
                 ) : (
                   <>
                     <Save size={20} />
@@ -648,6 +665,7 @@ const CreateLamaranPage = () => {
           </form>
         </div>
       </div>
+
       <Footer />
     </>
   );
