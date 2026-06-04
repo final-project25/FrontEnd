@@ -49,12 +49,26 @@ const DaftarPelamarPage = () => {
   const getAllPelamar = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/rekruitmen");
 
-      const filteredPelamar = response.data.data.filter(
-        (p) => p.lowongan_kerja.id === parseInt(lowonganId),
+      let allData = [];
+      let currentPage = 1;
+      let lastPage = 1;
+
+      // Fetch semua halaman pagination
+      do {
+        const response = await api.get("/rekruitmen", {
+          params: { page: currentPage },
+        });
+
+        allData = [...allData, ...response.data.data];
+        lastPage = response.data.meta?.last_page ?? 1;
+        currentPage++;
+      } while (currentPage <= lastPage);
+
+      // Filter berdasarkan lowongan_id dengan optional chaining
+      const filteredPelamar = allData.filter(
+        (p) => p.lowongan_kerja?.id === parseInt(lowonganId)
       );
-      
 
       setPelamar(filteredPelamar);
 
@@ -81,6 +95,10 @@ const DaftarPelamarPage = () => {
   };
 
   const handlePreviewFile = (url, title) => {
+    if (!url) {
+      showError("File tidak tersedia");
+      return;
+    }
     const fileType = getFileType(url);
     setPreviewData({ url, title, type: fileType });
     setShowPreviewModal(true);
@@ -111,19 +129,19 @@ const DaftarPelamarPage = () => {
                 status_terima: statusAction.status,
                 catatan: statusAction.catatan,
               }
-            : p,
-        ),
+            : p
+        )
       );
 
       succesError(
-        `Status pelamar berhasil diubah menjadi ${statusAction.status}`,
+        `Status pelamar berhasil diubah menjadi ${statusAction.status}`
       );
       setShowStatusModal(false);
       setStatusAction({ id: null, status: "", catatan: "" });
     } catch (error) {
       console.log(error);
       showError(
-        error.response?.data?.message || "Gagal mengubah status pelamar",
+        error.response?.data?.message || "Gagal mengubah status pelamar"
       );
     }
   };
@@ -145,15 +163,9 @@ const DaftarPelamarPage = () => {
   });
 
   const totalPelamar = pelamar.length;
-  const pendingCount = pelamar.filter(
-    (p) => p.status_terima === "pending",
-  ).length;
-  const diterimaCount = pelamar.filter(
-    (p) => p.status_terima === "diterima",
-  ).length;
-  const ditolakCount = pelamar.filter(
-    (p) => p.status_terima === "ditolak",
-  ).length;
+  const pendingCount = pelamar.filter((p) => p.status_terima === "pending").length;
+  const diterimaCount = pelamar.filter((p) => p.status_terima === "diterima").length;
+  const ditolakCount = pelamar.filter((p) => p.status_terima === "ditolak").length;
 
   const formatDate = (dateString) => {
     if (!dateString) return "-";
@@ -202,6 +214,7 @@ const DaftarPelamarPage = () => {
 
   return (
     <div>
+      {/* Header */}
       <div className="mb-6">
         <button
           onClick={() => navigate("/rekrutmen")}
@@ -230,6 +243,7 @@ const DaftarPelamarPage = () => {
         )}
       </div>
 
+      {/* Search & Filter */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
         <div className="flex flex-col md:flex-row gap-3">
           <div className="relative flex-1">
@@ -259,6 +273,7 @@ const DaftarPelamarPage = () => {
         </div>
       </div>
 
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between">
@@ -276,9 +291,7 @@ const DaftarPelamarPage = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Pending</p>
-              <p className="text-2xl font-bold text-yellow-600">
-                {pendingCount}
-              </p>
+              <p className="text-2xl font-bold text-yellow-600">{pendingCount}</p>
             </div>
             <div className="bg-yellow-100 p-3 rounded-lg">
               <Clock className="text-yellow-600" size={24} />
@@ -290,9 +303,7 @@ const DaftarPelamarPage = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Diterima</p>
-              <p className="text-2xl font-bold text-green-600">
-                {diterimaCount}
-              </p>
+              <p className="text-2xl font-bold text-green-600">{diterimaCount}</p>
             </div>
             <div className="bg-green-100 p-3 rounded-lg">
               <CheckCircle className="text-green-600" size={24} />
@@ -313,6 +324,7 @@ const DaftarPelamarPage = () => {
         </div>
       </div>
 
+      {/* Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -357,7 +369,7 @@ const DaftarPelamarPage = () => {
                     <p className="text-gray-500">
                       {searchTerm || filterStatus !== "all"
                         ? "Tidak ada pelamar yang sesuai"
-                        : "Belum ada pelamar"}
+                        : "Belum ada pelamar untuk lowongan ini"}
                     </p>
                   </td>
                 </tr>
@@ -370,20 +382,20 @@ const DaftarPelamarPage = () => {
                     <td className="px-6 py-4">
                       <div>
                         <p className="text-sm font-medium text-gray-900">
-                          {p.nama}
+                          {p.nama_lengkap ?? p.nama ?? "-"}
                         </p>
-                        <p className="text-xs text-gray-500">NIK: {p.nik}</p>
+                        <p className="text-xs text-gray-500">NIK: {p.nik ?? "-"}</p>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-1 text-sm text-gray-900">
                         <Phone size={14} className="text-gray-400" />
-                        <span>{p.no_wa}</span>
+                        <span>{p.no_wa ?? "-"}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded">
-                        {p.posisi_dilamar}
+                        {p.posisi_dilamar ?? "-"}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -464,13 +476,12 @@ const DaftarPelamarPage = () => {
         </div>
       </div>
 
+      {/* Modal: Detail Pelamar */}
       {showDetailModal && selectedPelamar && (
-        <div className="fixed inset-0 backdrop-blur-xs bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 backdrop-blur-xs bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center z-10">
-              <h2 className="text-xl font-bold text-gray-900">
-                Detail Pelamar
-              </h2>
+              <h2 className="text-xl font-bold text-gray-900">Detail Pelamar</h2>
               <button
                 onClick={() => setShowDetailModal(false)}
                 className="text-gray-400 hover:text-gray-600"
@@ -480,7 +491,7 @@ const DaftarPelamarPage = () => {
             </div>
 
             <div className="p-6 space-y-6">
-              {/* Personal Info */}
+              {/* Informasi Pribadi */}
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
                   Informasi Pribadi
@@ -489,48 +500,55 @@ const DaftarPelamarPage = () => {
                   <div>
                     <p className="text-sm text-gray-600">NIK</p>
                     <p className="text-sm font-medium text-gray-900">
-                      {selectedPelamar.nik}
+                      {selectedPelamar.nik ?? "-"}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Nama Lengkap</p>
                     <p className="text-sm font-medium text-gray-900">
-                      {selectedPelamar.nama_lengkap}
+                      {selectedPelamar.nama_lengkap ?? selectedPelamar.nama ?? "-"}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Nama Panggilan</p>
                     <p className="text-sm font-medium text-gray-900">
-                      {selectedPelamar.nama}
+                      {selectedPelamar.nama ?? "-"}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">No. WhatsApp</p>
                     <p className="text-sm font-medium text-gray-900">
-                      {selectedPelamar.no_wa}
+                      {selectedPelamar.no_wa ?? "-"}
                     </p>
                   </div>
                   <div className="col-span-2">
                     <p className="text-sm text-gray-600">Alamat</p>
                     <p className="text-sm font-medium text-gray-900">
-                      {selectedPelamar.alamat}
+                      {selectedPelamar.alamat ?? "-"}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Posisi Dilamar</p>
                     <p className="text-sm font-medium text-gray-900">
-                      {selectedPelamar.posisi_dilamar}
+                      {selectedPelamar.posisi_dilamar ?? "-"}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Token Pendaftaran</p>
                     <p className="text-sm font-medium text-cyan-600">
-                      {selectedPelamar.token_pendaftaran}
+                      {selectedPelamar.token_pendaftaran ?? "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Tanggal Daftar</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {formatDate(selectedPelamar.created_at)}
                     </p>
                   </div>
                 </div>
               </div>
 
+              {/* Dokumen Lamaran */}
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
                   Dokumen Lamaran
@@ -542,29 +560,31 @@ const DaftarPelamarPage = () => {
                     { label: "Foto SKCK", url: selectedPelamar.foto_skck },
                     { label: "Pas Foto", url: selectedPelamar.pas_foto },
                     { label: "Surat Sehat", url: selectedPelamar.surat_sehat },
-                    {
-                      label: "Surat Anti Narkoba",
-                      url: selectedPelamar.surat_anti_narkoba,
-                    },
-                    {
-                      label: "Surat Lamaran",
-                      url: selectedPelamar.surat_lamaran,
-                    },
+                    { label: "Surat Anti Narkoba", url: selectedPelamar.surat_anti_narkoba },
+                    { label: "Surat Lamaran", url: selectedPelamar.surat_lamaran },
                     { label: "CV", url: selectedPelamar.cv },
                   ].map((doc, idx) => (
                     <div
                       key={idx}
                       onClick={() => handlePreviewFile(doc.url, doc.label)}
-                      className="flex items-center justify-between gap-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                      className={`flex items-center justify-between gap-2 px-4 py-3 border rounded-lg transition-colors ${
+                        doc.url
+                          ? "border-gray-300 hover:bg-gray-50 cursor-pointer"
+                          : "border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed"
+                      }`}
                     >
                       <span className="text-sm text-gray-900 flex-1">
                         {doc.label}
+                      </span>
+                      <span className={`text-xs ${doc.url ? "text-cyan-600" : "text-gray-400"}`}>
+                        {doc.url ? "Lihat" : "Tidak ada"}
                       </span>
                     </div>
                   ))}
                 </div>
               </div>
 
+              {/* Status & Catatan */}
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
                   Status & Catatan
@@ -598,8 +618,9 @@ const DaftarPelamarPage = () => {
         </div>
       )}
 
+      {/* Modal: Preview File */}
       {showPreviewModal && (
-        <div className="fixed inset-0 backdrop-blur-sm bg-opacity-90 flex items-center justify-center z-[60] p-4">
+        <div className="fixed inset-0 backdrop-blur-sm bg-black/60 flex items-center justify-center z-[60] p-4">
           <div className="bg-white rounded-lg max-w-6xl w-full max-h-[95vh] overflow-hidden flex flex-col">
             <div className="bg-gray-800 text-white p-4 flex justify-between items-center">
               <h3 className="text-lg font-semibold">{previewData.title}</h3>
@@ -627,10 +648,16 @@ const DaftarPelamarPage = () => {
                   title={previewData.title}
                 />
               ) : (
-                <div className="flex items-center justify-center h-full">
-                  <p className="text-gray-500">
-                    Preview tidak tersedia. Silakan download file.
-                  </p>
+                <div className="flex flex-col items-center justify-center h-64 gap-4">
+                  <p className="text-gray-500">Preview tidak tersedia.</p>
+                  <a
+                    href={previewData.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700"
+                  >
+                    Buka di Tab Baru
+                  </a>
                 </div>
               )}
             </div>
@@ -638,8 +665,9 @@ const DaftarPelamarPage = () => {
         </div>
       )}
 
+      {/* Modal: Ubah Status */}
       {showStatusModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full">
             <div className="p-6 border-b">
               <h2 className="text-xl font-bold text-gray-900">
@@ -672,10 +700,7 @@ const DaftarPelamarPage = () => {
                 <textarea
                   value={statusAction.catatan}
                   onChange={(e) =>
-                    setStatusAction({
-                      ...statusAction,
-                      catatan: e.target.value,
-                    })
+                    setStatusAction({ ...statusAction, catatan: e.target.value })
                   }
                   rows={4}
                   placeholder="Tambahkan catatan untuk pelamar..."

@@ -1,38 +1,41 @@
-import { ArrowLeft, Save, Calculator } from "lucide-react";
+import { ArrowLeft, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import api from "../../../services/api";
 import { ClipLoader } from "react-spinners";
 import { useNavigate, useParams } from "react-router-dom";
 import { showError, succesError } from "../../../utils/notify";
 
+const INITIAL_FORM = {
+  // Field yang dikirim ke backend
+  karyawan_id: null,
+  jumlah_penghasilan_kotor: "",
+  jumlah_hari_kerja: "",
+  gaji_harian: "",
+  gajian_bulan: "",
+  jumlah_lembur: "",
+  uang_thr: "",
+  status_penggajian: true,
+  tanggal_cetak: "",
+  // Field display only (read-only, tidak dikirim ke backend)
+  no_induk: "",
+  no_rek_bri: "",
+  nik: "",
+  nama: "",
+  posisi: "",
+  bpjs_kesehatan: "",
+  bpjs_jht: "",
+  bpjs_jp: "",
+  total_bpjs: "",
+  upah_kotor_karyawan: "",
+  upah_diterima: "",
+  bulan_tahun: "",
+};
+
 const UpdatePenggajianPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [loading, setLoading] = useState(false);
-
-  const [formData, setFormData] = useState({
-    no_induk: "",
-    nik: "",
-    nama: "",
-    no_rek_bri: "",
-    posisi: "",
-    jumlah_penghasilan_kotor: "",
-    bpjs_kesehatan: "",
-    bpjs_jht: "",
-    bpjs_jp: "",
-    total_bpjs: "",
-    uang_thr: "0",
-    jumlah_hari_kerja: "",
-    gaji_harian: "",
-    jumlah_lembur: "0",
-    upah_kotor_karyawan: "",
-    upah_diterima: "",
-    status_penggajian: "true",
-    gajian_bulan: "",
-    periode_awal: "",
-    periode_akhir: "",
-    tanggal_cetak: "",
-  });
+  const [formData, setFormData] = useState(INITIAL_FORM);
 
   useEffect(() => {
     getPenggajianById();
@@ -44,10 +47,32 @@ const UpdatePenggajianPage = () => {
       const response = await api.get(`/penggajian/${id}`);
       const data = response.data.data;
 
-      setFormData((prev) => ({
-        ...prev,
-        ...data,
-      }));
+      setFormData({
+        // Ambil karyawan_id dari nested object karyawan
+        karyawan_id: data.karyawan?.id ?? null,
+        jumlah_penghasilan_kotor: data.jumlah_penghasilan_kotor ?? "",
+        jumlah_hari_kerja: data.jumlah_hari_kerja ?? "",
+        gaji_harian: data.gaji_harian ?? "",
+        gajian_bulan: data.gajian_bulan ?? "",
+        jumlah_lembur: data.jumlah_lembur ?? "",
+        uang_thr: data.uang_thr ?? "",
+        status_penggajian: data.status_penggajian ?? true,
+        tanggal_cetak: data.tanggal_cetak ?? "",
+        // Read-only display dari nested object karyawan
+        no_induk: data.karyawan?.nomor_induk ?? "",
+        no_rek_bri: data.karyawan?.no_rek_bri ?? "",
+        nik: data.karyawan?.nik ?? "",
+        nama: data.karyawan?.nama_lengkap ?? "",
+        posisi: data.karyawan?.posisi ?? "",
+        // Kalkulasi dari backend
+        bpjs_kesehatan: data.bpjs_kesehatan ?? "",
+        bpjs_jht: data.bpjs_jht ?? "",
+        bpjs_jp: data.bpjs_jp ?? "",
+        total_bpjs: data.total_bpjs ?? "",
+        upah_kotor_karyawan: data.upah_kotor_karyawan ?? "",
+        upah_diterima: data.upah_diterima ?? "",
+        bulan_tahun: data.bulan_tahun ?? "",
+      });
     } catch (error) {
       console.log(error);
       showError("Gagal memuat data penggajian");
@@ -58,32 +83,40 @@ const UpdatePenggajianPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.nik) {
-      showError("Silakan pilih karyawan terlebih dahulu");
+
+    if (!formData.karyawan_id) {
+      showError("Data karyawan tidak ditemukan, coba muat ulang halaman");
       return;
     }
+
     try {
-      const submitData = {
-        ...formData,
-        jumlah_penghasilan_kotor: parseFloat(formData.jumlah_penghasilan_kotor),
-        bpjs_kesehatan: parseFloat(formData.bpjs_kesehatan),
-        bpjs_jht: parseFloat(formData.bpjs_jht),
-        bpjs_jp: parseFloat(formData.bpjs_jp),
-        total_bpjs: parseFloat(formData.total_bpjs),
-        uang_thr: parseFloat(formData.uang_thr),
-        jumlah_hari_kerja: parseFloat(formData.jumlah_hari_kerja),
-        gaji_harian: parseFloat(formData.gaji_harian),
-        jumlah_lembur: parseFloat(formData.jumlah_lembur),
-        upah_kotor_karyawan: parseFloat(formData.upah_kotor_karyawan),
-        upah_diterima: parseFloat(formData.upah_diterima),
-      };
       setLoading(true);
+
+      // Hanya kirim field yang diperlukan backend, bukan seluruh formData
+      const submitData = {
+        karyawan_id: formData.karyawan_id, // integer, bukan string kosong
+        jumlah_penghasilan_kotor: parseFloat(formData.jumlah_penghasilan_kotor) || 0,
+        jumlah_hari_kerja: parseFloat(formData.jumlah_hari_kerja) || 0,
+        gaji_harian: parseFloat(formData.gaji_harian) || 0,
+        gajian_bulan: formData.gajian_bulan,
+        jumlah_lembur: parseFloat(formData.jumlah_lembur) || 0,
+        uang_thr: parseFloat(formData.uang_thr) || 0,
+        status_penggajian: formData.status_penggajian,
+        tanggal_cetak: formData.tanggal_cetak || null,
+      };
+
       const response = await api.put(`/penggajian/${id}`, submitData);
       console.log(response.data);
-      succesError("Data penggajian berhasil ditambahkan");
+      succesError("Data penggajian berhasil diubah");
       navigate("/penggajian");
     } catch (error) {
       console.log(error);
+      if (error.response?.status === 422) {
+        const backendErrors = error.response.data.errors;
+        const firstError = Object.values(backendErrors)?.[0]?.[0];
+        showError(firstError || "Validasi gagal");
+        return;
+      }
       showError(error.response?.data?.message || "Gagal menyimpan data");
     } finally {
       setLoading(false);
@@ -102,7 +135,7 @@ const UpdatePenggajianPage = () => {
   };
 
   const formatCurrency = (value) => {
-    if (!value) return "Rp 0";
+    if (!value && value !== 0) return "Rp 0";
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
@@ -110,8 +143,14 @@ const UpdatePenggajianPage = () => {
     }).format(value);
   };
 
+  const readOnlyClass =
+    "w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed";
+  const inputClass =
+    "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed";
+
   return (
     <div>
+      {/* Header */}
       <div className="mb-6">
         <button
           onClick={handleCancel}
@@ -121,9 +160,7 @@ const UpdatePenggajianPage = () => {
           <ArrowLeft size={20} />
           <span>Kembali ke Data Penggajian</span>
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">
-          Ubah Data Penggajian
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-900">Ubah Data Penggajian</h1>
         <p className="text-gray-600 mt-1">
           Lengkapi form di bawah untuk mengubah data penggajian
         </p>
@@ -131,89 +168,81 @@ const UpdatePenggajianPage = () => {
 
       <form onSubmit={handleSubmit}>
         <div className="bg-white rounded-lg shadow">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Data Karyawan
-            </h2>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Nomor Induk <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="no_induk"
-                value={formData.no_induk}
-                onChange={handleChange}
-                placeholder="Contoh: KRY-001"
-                disabled={loading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-              />
-            </div>
-
+          {/* Section 1: Data Karyawan (read-only) */}
+          <div className="p-6 border-b border-gray-200 bg-blue-50">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Data Karyawan</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  No. Rekening BRI <span className="text-red-500">*</span>
+                  Nomor Induk
                 </label>
                 <input
                   type="text"
-                  name="no_rek_bri"
-                  value={formData.no_rek_bri}
-                  onChange={handleChange}
-                  placeholder="Nomor rekening BRI"
-                  disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent bg-gray-50"
+                  value={formData.no_induk}
+                  className={readOnlyClass}
+                  readOnly
                 />
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  NIK <span className="text-red-500">*</span>
+                  NIK
                 </label>
                 <input
                   type="text"
-                  name="nik"
                   value={formData.nik}
-                  onChange={handleChange}
-                  placeholder="NIK karyawan"
-                  disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent bg-gray-50"
+                  className={readOnlyClass}
+                  readOnly
                 />
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nama Lengkap <span className="text-red-500">*</span>
+                  Nama Lengkap
                 </label>
                 <input
                   type="text"
-                  name="nama"
                   value={formData.nama}
-                  onChange={handleChange}
-                  placeholder="Nama karyawan"
-                  disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent bg-gray-50"
+                  className={readOnlyClass}
+                  readOnly
                 />
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Bagian <span className="text-red-500">*</span>
+                  No. Rekening BRI
                 </label>
                 <input
                   type="text"
-                  name="posisi"
+                  value={formData.no_rek_bri}
+                  className={readOnlyClass}
+                  readOnly
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Posisi
+                </label>
+                <input
+                  type="text"
                   value={formData.posisi}
-                  onChange={handleChange}
-                  placeholder="Posisi karyawan"
-                  disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent bg-gray-50"
+                  className={readOnlyClass}
+                  readOnly
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Periode
+                </label>
+                <input
+                  type="text"
+                  value={formData.bulan_tahun}
+                  className={readOnlyClass}
+                  readOnly
                 />
               </div>
             </div>
           </div>
 
+          {/* Section 2: Rincian Gaji (editable) */}
           <div className="p-6 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
               Rincian Anggaran Gaji
@@ -221,8 +250,7 @@ const UpdatePenggajianPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Jumlah Penghasilan Kotor{" "}
-                  <span className="text-red-500">*</span>
+                  Jumlah Penghasilan Kotor <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -231,85 +259,10 @@ const UpdatePenggajianPage = () => {
                   onChange={handleChange}
                   placeholder="0"
                   disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  className={inputClass}
                 />
-                <p className="text-xs text-red-600 mt-1">
+                <p className="text-xs text-gray-500 mt-1">
                   {formatCurrency(formData.jumlah_penghasilan_kotor)}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  BPJS Kesehatan 1%<span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="bpjs_kesehatan"
-                  value={formData.bpjs_kesehatan}
-                  onChange={handleChange}
-                  placeholder="0"
-                  disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                />
-                <p className="text-xs text-red-600 mt-1">
-                  {formatCurrency(formData.bpjs_kesehatan)}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  BPJS Ketenagakerjaan (JHT) 2%
-                  <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="bpjs_jht"
-                  value={formData.bpjs_jht}
-                  onChange={handleChange}
-                  placeholder="0"
-                  disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                />
-                <p className="text-xs text-red-600 mt-1">
-                  {formatCurrency(formData.bpjs_jht)}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  BPJS Ketenagakerjaan (JP) 1%
-                  <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="bpjs_jp"
-                  value={formData.bpjs_jp}
-                  onChange={handleChange}
-                  placeholder="0"
-                  disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                />
-                <p className="text-xs text-red-600 mt-1">
-                  {formatCurrency(formData.bpjs_jp)}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Total BPJS
-                  <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="total_bpjs"
-                  value={formData.total_bpjs}
-                  onChange={handleChange}
-                  placeholder="0"
-                  disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                />
-                <p className="text-xs text-red-600 mt-1">
-                  {formatCurrency(formData.total_bpjs)}
                 </p>
               </div>
 
@@ -324,7 +277,7 @@ const UpdatePenggajianPage = () => {
                   onChange={handleChange}
                   placeholder="0"
                   disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  className={inputClass}
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   {formatCurrency(formData.uang_thr)}
@@ -335,18 +288,15 @@ const UpdatePenggajianPage = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Jumlah Hari Kerja <span className="text-red-500">*</span>
                 </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    step="0.5"
-                    onChange={handleChange}
-                    name="jumlah_hari_kerja"
-                    value={formData.jumlah_hari_kerja}
-                    placeholder="0"
-                    disabled={loading}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  />
-                </div>
+                <input
+                  type="text"
+                  name="jumlah_hari_kerja"
+                  value={formData.jumlah_hari_kerja}
+                  onChange={handleChange}
+                  placeholder="0"
+                  disabled={loading}
+                  className={inputClass}
+                />
                 <p className="text-xs text-gray-500 mt-1">
                   Bisa desimal (contoh: 24.5)
                 </p>
@@ -354,7 +304,7 @@ const UpdatePenggajianPage = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Satuan <span className="text-red-500">*</span>
+                  Gaji Harian <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -363,7 +313,7 @@ const UpdatePenggajianPage = () => {
                   onChange={handleChange}
                   placeholder="0"
                   disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  className={inputClass}
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   {formatCurrency(formData.gaji_harian)}
@@ -381,7 +331,7 @@ const UpdatePenggajianPage = () => {
                   onChange={handleChange}
                   placeholder="0"
                   disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  className={inputClass}
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   {formatCurrency(formData.jumlah_lembur)}
@@ -390,11 +340,12 @@ const UpdatePenggajianPage = () => {
             </div>
           </div>
 
-          <div className="p-6 border-b border-gray-200">
+          {/* Section 4: Periode & Status */}
+          <div className="p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Periode Gaji
+              Periode & Status
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Bulan Gajian <span className="text-red-500">*</span>
@@ -405,45 +356,12 @@ const UpdatePenggajianPage = () => {
                   value={formData.gajian_bulan}
                   onChange={handleChange}
                   disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  className={inputClass}
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Periode Awal <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  name="periode_awal"
-                  value={formData.periode_awal}
-                  onChange={handleChange}
-                  disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                />
-              </div>
+             
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Periode Akhir <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  name="periode_akhir"
-                  value={formData.periode_akhir}
-                  onChange={handleChange}
-                  disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Status & Tanggal Cetak
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Status Penggajian <span className="text-red-500">*</span>
@@ -453,15 +371,12 @@ const UpdatePenggajianPage = () => {
                     <input
                       type="radio"
                       name="status_penggajian"
-                      value={true}
                       checked={formData.status_penggajian === true}
                       onChange={() =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          status_penggajian: true,
-                        }))
+                        setFormData((prev) => ({ ...prev, status_penggajian: true }))
                       }
-                      className="w-4 h-4 text-cyan-600 focus:ring-cyan-500 disabled:cursor-not-allowed"
+                      disabled={loading}
+                      className="w-4 h-4 text-cyan-600 focus:ring-cyan-500"
                     />
                     <span className="ml-2 text-sm text-gray-700">Selesai</span>
                   </label>
@@ -469,39 +384,23 @@ const UpdatePenggajianPage = () => {
                     <input
                       type="radio"
                       name="status_penggajian"
-                      value={false}
                       checked={formData.status_penggajian === false}
                       onChange={() =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          status_penggajian: false,
-                        }))
+                        setFormData((prev) => ({ ...prev, status_penggajian: false }))
                       }
-                      className="w-4 h-4 text-cyan-600 focus:ring-cyan-500 disabled:cursor-not-allowed"
+                      disabled={loading}
+                      className="w-4 h-4 text-cyan-600 focus:ring-cyan-500"
                     />
                     <span className="ml-2 text-sm text-gray-700">Pending</span>
                   </label>
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tanggal Cetak <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  name="tanggal_cetak"
-                  value={formData.tanggal_cetak}
-                  onChange={handleChange}
-                  disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-                />
               </div>
             </div>
           </div>
         </div>
       </form>
 
+      {/* Action Buttons */}
       <div className="mt-6 flex items-center justify-end gap-4">
         <button
           type="button"
@@ -518,9 +417,7 @@ const UpdatePenggajianPage = () => {
           className="flex items-center gap-2 bg-cyan-600 text-white px-6 py-2 rounded-lg hover:bg-cyan-700 transition-colors disabled:bg-cyan-400 disabled:cursor-not-allowed"
         >
           {loading ? (
-            <>
-              <ClipLoader color="#ffffff" size={20} />
-            </>
+            <ClipLoader color="#ffffff" size={20} />
           ) : (
             <>
               <Save size={20} />

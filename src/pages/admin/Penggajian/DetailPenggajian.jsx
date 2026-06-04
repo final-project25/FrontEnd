@@ -2,7 +2,6 @@ import {
   ArrowLeft,
   Edit,
   Trash2,
-  FileText,
   Calendar,
   User,
   CreditCard,
@@ -18,8 +17,7 @@ const DetailPenggajianPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [loading, setLoading] = useState(false);
-
-  const [penggajian, setPenggajian] = useState([]);
+  const [penggajian, setPenggajian] = useState(null);
 
   useEffect(() => {
     getPenggajianById();
@@ -45,6 +43,11 @@ const DetailPenggajianPage = () => {
     );
   }
 
+  if (!penggajian) return null;
+
+  // Ambil data karyawan dari nested object
+  const karyawan = penggajian.karyawan ?? {};
+
   const formatDate = (dateString) => {
     if (!dateString) return "-";
     const date = new Date(dateString);
@@ -65,7 +68,7 @@ const DetailPenggajianPage = () => {
   };
 
   const formatCurrency = (amount) => {
-    if (!amount) return "Rp 0";
+    if (!amount && amount !== 0) return "Rp 0";
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
@@ -84,8 +87,10 @@ const DetailPenggajianPage = () => {
     };
     return posisiMap[posisi] || posisi;
   };
+
   return (
     <div>
+      {/* Header */}
       <div className="mb-6">
         <button
           type="button"
@@ -107,7 +112,6 @@ const DetailPenggajianPage = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            
             <button
               onClick={() => navigate(`/update-penggajian/${id}`)}
               className="flex items-center gap-2 bg-yellow-500 text-white px-3 py-2 rounded-lg hover:bg-yellow-600 transition-colors text-sm"
@@ -123,6 +127,7 @@ const DetailPenggajianPage = () => {
         </div>
       </div>
 
+      {/* Status Badge */}
       <div className="mb-6">
         <span
           className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold ${
@@ -138,11 +143,11 @@ const DetailPenggajianPage = () => {
       </div>
 
       <div className="space-y-6">
+
+        {/* Section 1: Data Karyawan */}
         <div className="bg-white rounded-lg shadow">
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Data Karyawan
-            </h2>
+            <h2 className="text-lg font-semibold text-gray-900">Data Karyawan</h2>
           </div>
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -153,7 +158,7 @@ const DetailPenggajianPage = () => {
                 <div className="flex items-center gap-2">
                   <User size={16} className="text-gray-400" />
                   <p className="text-base text-gray-900 font-medium">
-                    {penggajian.no_induk}
+                    {karyawan.nomor_induk ?? "-"}
                   </p>
                 </div>
               </div>
@@ -162,7 +167,9 @@ const DetailPenggajianPage = () => {
                 <label className="block text-sm font-medium text-gray-500 mb-1">
                   NIK
                 </label>
-                <p className="text-base text-gray-900">{penggajian.nik}</p>
+                <p className="text-base text-gray-900">
+                  {karyawan.nik ?? "-"}
+                </p>
               </div>
 
               <div>
@@ -170,7 +177,7 @@ const DetailPenggajianPage = () => {
                   Nama Karyawan
                 </label>
                 <p className="text-base text-gray-900 font-medium">
-                  {penggajian.nama}
+                  {karyawan.nama_lengkap ?? "-"}
                 </p>
               </div>
 
@@ -181,7 +188,7 @@ const DetailPenggajianPage = () => {
                 <div className="flex items-center gap-2">
                   <Briefcase size={16} className="text-gray-400" />
                   <p className="text-base text-gray-900">
-                    {formatPosisi(penggajian.posisi)}
+                    {formatPosisi(karyawan.posisi)}
                   </p>
                 </div>
               </div>
@@ -193,7 +200,7 @@ const DetailPenggajianPage = () => {
                 <div className="flex items-center gap-2">
                   <CreditCard size={16} className="text-gray-400" />
                   <p className="text-base text-gray-900">
-                    {penggajian.no_rek_bri}
+                    {karyawan.no_rek_bri ?? "-"}
                   </p>
                 </div>
               </div>
@@ -201,11 +208,10 @@ const DetailPenggajianPage = () => {
           </div>
         </div>
 
+        {/* Section 2: Periode Gaji */}
         <div className="bg-white rounded-lg shadow">
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Periode Gaji
-            </h2>
+            <h2 className="text-lg font-semibold text-gray-900">Periode Gaji</h2>
           </div>
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -216,27 +222,11 @@ const DetailPenggajianPage = () => {
                 <div className="flex items-center gap-2 text-gray-900">
                   <Calendar size={16} className="text-gray-400" />
                   <span className="font-medium">
-                    {formatMonthYear(penggajian.gajian_bulan)}
+                    {penggajian.bulan_tahun ?? formatMonthYear(penggajian.gajian_bulan)}
                   </span>
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">
-                  Periode Awal
-                </label>
-                <p className="text-base text-gray-900">
-                  {formatDate(penggajian.periode_awal)}
-                </p>
-              </div>
-              {" "}
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">
-                  Periode Akhir
-                </label>
-                <p className="text-base text-gray-900">
-                  {formatDate(penggajian.periode_akhir)}
-                </p>
-              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-500 mb-1">
                   Jumlah Hari Kerja
@@ -245,6 +235,7 @@ const DetailPenggajianPage = () => {
                   {penggajian.jumlah_hari_kerja} hari
                 </p>
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-500 mb-1">
                   Gaji Harian (Satuan)
@@ -253,6 +244,7 @@ const DetailPenggajianPage = () => {
                   {formatCurrency(penggajian.gaji_harian)}
                 </p>
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-500 mb-1">
                   Tanggal Cetak
@@ -265,11 +257,10 @@ const DetailPenggajianPage = () => {
           </div>
         </div>
 
+        {/* Section 3: Rincian Penghasilan */}
         <div className="bg-white rounded-lg shadow">
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Rincian Penghasilan
-            </h2>
+            <h2 className="text-lg font-semibold text-gray-900">Rincian Penghasilan</h2>
           </div>
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -306,11 +297,10 @@ const DetailPenggajianPage = () => {
           </div>
         </div>
 
+        {/* Section 4: Potongan BPJS */}
         <div className="bg-white rounded-lg shadow">
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Potongan BPJS
-            </h2>
+            <h2 className="text-lg font-semibold text-gray-900">Potongan BPJS</h2>
           </div>
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -353,12 +343,10 @@ const DetailPenggajianPage = () => {
           </div>
         </div>
 
-        {/* Ringkasan Gaji */}
-        <div className="bg-linear-to-r from-green-50 to-blue-50 rounded-lg shadow-lg border-2 border-green-200">
+        {/* Section 5: Ringkasan Gaji */}
+        <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg shadow-lg border-2 border-green-200">
           <div className="p-6 border-b border-green-200">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Ringkasan Gaji
-            </h2>
+            <h2 className="text-lg font-semibold text-gray-900">Ringkasan Gaji</h2>
           </div>
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -395,6 +383,7 @@ const DetailPenggajianPage = () => {
           </div>
         </div>
 
+        {/* Footer: Audit Info */}
         <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
@@ -402,15 +391,26 @@ const DetailPenggajianPage = () => {
               <span className="ml-2 text-gray-700">
                 {formatDate(penggajian.created_at)}
               </span>
+              {penggajian.dibuat_oleh && (
+                <span className="ml-1 text-gray-500">
+                  oleh {penggajian.dibuat_oleh.name}
+                </span>
+              )}
             </div>
             <div>
               <span className="text-gray-500">Terakhir diubah:</span>
               <span className="ml-2 text-gray-700">
                 {formatDate(penggajian.updated_at)}
               </span>
+              {penggajian.diubah_oleh && (
+                <span className="ml-1 text-gray-500">
+                  oleh {penggajian.diubah_oleh.name}
+                </span>
+              )}
             </div>
           </div>
         </div>
+
       </div>
     </div>
   );

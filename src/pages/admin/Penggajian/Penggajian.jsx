@@ -18,14 +18,6 @@ const generateYears = () => {
   return Array.from({ length: 7 }, (_, i) => current - 5 + i);
 };
 
-const formatMonthYear = (dateString) => {
-  if (!dateString) return "-";
-  return new Date(dateString).toLocaleDateString("id-ID", {
-    month: "long",
-    year: "numeric",
-  });
-};
-
 const formatCurrency = (amount) => {
   if (!amount) return "Rp 0";
   return new Intl.NumberFormat("id-ID", {
@@ -36,14 +28,8 @@ const formatCurrency = (amount) => {
   }).format(amount);
 };
 
-const INITIAL_PAGINATION = {
-  current_page: 1,
-  last_page: 1,
-  total: 0,
-  per_page: 15,
-  from: 0,
-  to: 0,
-};
+// Helper: ambil nilai pertama jika array, atau nilai langsung
+const getValue = (val) => (Array.isArray(val) ? val[0] : val);
 
 const PenggajianPage = () => {
   const navigate = useNavigate();
@@ -51,40 +37,30 @@ const PenggajianPage = () => {
   const [loading, setLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
   const [slipGajiKaryawan, setSlipGajiKaryawan] = useState({});
-  const [pagination, setPagination] = useState(INITIAL_PAGINATION);
   const [filterTahun, setFilterTahun] = useState(new Date().getFullYear());
   const [filterBulan, setFilterBulan] = useState(new Date().getMonth() + 1);
+  const [search, setSearch] = useState("");
+  const [meta, setMeta] = useState(null);
+  const [links, setLinks] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
-    fetchPenggajian(1);
-  }, []);
+    fetchPenggajian(currentPage);
+  }, [currentPage]);
 
   const fetchPenggajian = async (page = 1) => {
-  try {
-    setLoading(true);
-    const response = await api.get(`/penggajian?page=${page}`);
-    const { data, meta } = response.data; // ← ambil dari meta
-
-    setPenggajian(data);
-    setPagination({
-      current_page: meta.current_page,
-      last_page: meta.last_page,
-      total: meta.total,
-      per_page: meta.per_page,
-      from: meta.from,
-      to: meta.to,
-    });
-  } catch (error) {
-    console.error(error);
-    showError("Gagal memuat data penggajian");
-  } finally {
-    setLoading(false);
-  }
-};
-
-  const handlePageChange = (page) => {
-    if (page < 1 || page > pagination.last_page) return;
-    fetchPenggajian(page);
+    try {
+      setLoading(true);
+      const response = await api.get(`/penggajian?page=${page}`);
+      setPenggajian(response.data.data);
+      setMeta(response.data.meta);
+      setLinks(response.data.links);
+    } catch (error) {
+      console.error(error);
+      showError("Gagal memuat data penggajian");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -92,7 +68,7 @@ const PenggajianPage = () => {
     try {
       await api.delete(`/penggajian/${id}`);
       succesError("Data penggajian berhasil dihapus");
-      fetchPenggajian(pagination.current_page);
+      fetchPenggajian(currentPage);
     } catch (error) {
       console.error(error);
       showError(error.response?.data?.message || "Gagal menghapus data");
@@ -120,37 +96,59 @@ const PenggajianPage = () => {
   };
 
   const handleExportExcel = async () => {
-    try {
-      setExportLoading(true);
-      const response = await api.get(
-        `/penggajian/excel?tahun=${filterTahun}&bulan=${filterBulan}`,
-        { responseType: "blob" },
-      );
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      const fileName = `Penggajian_${getNamaBulan(filterBulan)}_${filterTahun}.xlsx`;
-      link.href = url;
-      link.setAttribute("download", fileName);
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      succesError(`File ${fileName} berhasil didownload!`);
-    } catch (error) {
-      console.error(error);
-      showError(
-        error.response?.data?.message ||
-        "Gagal mengexport data. Pastikan ada data penggajian untuk periode yang dipilih.",
-      );
-    } finally {
-      setExportLoading(false);
-    }
-  };
+  try {
+    setExportLoading(true);
 
-  const pageNumbers = Array.from(
-  { length: pagination.last_page || 1 },
-  (_, i) => i + 1,
-);
+    const gajian_bulan = `${filterTahun}-${String(filterBulan).padStart(2, "0")}-01`;
+
+    const response = await api.get("/penggajian/excel", {
+      params: { gajian_bulan },
+      responseType: "blob",
+    });
+
+    const blob = new Blob([response.data], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+
+    const url = window.URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Penggajian_${getNamaBulan(filterBulan)}_${filterTahun}.xlsx`;
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    window.URL.revokeObjectURL(url);
+
+    succesError("Export Excel berhasil!");
+  } catch (error) {
+    console.error(error);
+    showError("Export gagal. Cek data atau server.");
+  } finally {
+    setExportLoading(false);
+  }
+};
+
+  // ✅ Dipindah ke dalam component
+  const filteredPenggajian = penggajian.filter((p) => {
+    const q = search.toLowerCase();
+    return (
+      p.karyawan?.nama_lengkap?.toLowerCase().includes(q) ||
+      p.karyawan?.nomor_induk?.toLowerCase().includes(q) ||
+      p.karyawan?.nik?.toLowerCase().includes(q)
+    );
+  });
+
+  // ✅ Gunakan getValue() untuk handle nilai array dari backend
+  const currentPageMeta = getValue(meta?.current_page);
+  const perPageMeta = getValue(meta?.per_page);
+  const lastPageMeta = getValue(meta?.last_page);
+  const totalMeta = getValue(meta?.total);
+
+  const pageNumbers =
+    meta?.links?.filter((l) => l.page !== null).map((l) => l.page) || [];
 
   return (
     <div>
@@ -167,6 +165,8 @@ const PenggajianPage = () => {
               <input
                 type="text"
                 placeholder="Cari nama, nomor induk, atau NIK..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
               />
             </div>
@@ -212,15 +212,9 @@ const PenggajianPage = () => {
                 className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:bg-green-400 disabled:cursor-not-allowed"
               >
                 {exportLoading ? (
-                  <>
-                    <ClipLoader color="#ffffff" size={16} />
-                    <span>Exporting...</span>
-                  </>
+                  <><ClipLoader color="#ffffff" size={16} /><span>Exporting...</span></>
                 ) : (
-                  <>
-                    <Download size={20} />
-                    <span>Export Excel</span>
-                  </>
+                  <><Download size={20} /><span>Export Excel</span></>
                 )}
               </button>
               <span className="text-sm text-gray-500">
@@ -236,7 +230,7 @@ const PenggajianPage = () => {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                {["No", "Nama", "Posisi", "Periode", "Hari Kerja", "Gaji Kotor", "Upah Diterima", "Status", "Aksi"].map((h) => (
+                {["No", "Nama", "Posisi", "Periode", "Hari Kerja", "Gaji Kotor", "Upah Diterima", "Aksi"].map((h) => (
                   <th key={h} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {h}
                   </th>
@@ -253,36 +247,49 @@ const PenggajianPage = () => {
                     </div>
                   </td>
                 </tr>
-              ) : penggajian.length === 0 ? (
+              ) : filteredPenggajian.length === 0 ? (
                 <tr>
                   <td colSpan="9" className="px-6 py-8 text-center text-gray-500">
                     Tidak ada data penggajian
                   </td>
                 </tr>
               ) : (
-                penggajian.map((p, index) => (
+                filteredPenggajian.map((p, index) => (
                   <tr key={p.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {(pagination.current_page - 1) * pagination.per_page + index + 1}
+                      {/* ✅ Pakai getValue() agar tidak NaN */}
+                      {(currentPageMeta - 1) * perPageMeta + index + 1}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{p.karyawan?.nama_lengkap}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{p.karyawan?.posisi}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatMonthYear(p.gajian_bulan)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{p.jumlah_hari_kerja} hari</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{formatCurrency(p.upah_kotor_karyawan)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-semibold">{formatCurrency(p.upah_diterima)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {p.karyawan?.nama_lengkap}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {p.karyawan?.posisi?.replace(/_/g, " ")?.replace(/\b\w/g, (c) => c.toUpperCase())}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {p.bulan_tahun}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {p.jumlah_hari_kerja} hari
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                      {formatCurrency(p.upah_kotor_karyawan)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-semibold">
+                      {formatCurrency(p.upah_diterima)}
+                    </td>
+                    {/* <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs font-semibold rounded-full ${p.status_penggajian ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}>
                         {p.status_penggajian ? "Selesai" : "Pending"}
                       </span>
-                    </td>
+                    </td> */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <div className="flex items-center gap-2">
                         <button onClick={() => navigate(`/detail-penggajian/${p.id}`)} className="text-blue-600 hover:text-blue-800" title="Lihat Detail">
                           <Eye size={18} />
                         </button>
                         <button
-                          onClick={() => handleSendWhatsApp(p.id, p.nama)}
+                          onClick={() => handleSendWhatsApp(p.id, p.karyawan?.nama_lengkap)}
                           disabled={slipGajiKaryawan[p.id]}
                           className="text-green-600 hover:text-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Kirim Slip Gaji via WhatsApp"
@@ -307,14 +314,16 @@ const PenggajianPage = () => {
 
       <div className="mt-4 flex items-center justify-between">
         <p className="text-sm text-gray-600">
-          Menampilkan {pagination.from}–{pagination.to} dari {pagination.total} data
+          {meta
+            ? `Menampilkan ${meta.from ?? 0}–${meta.to ?? 0} dari ${totalMeta} data penggajian`
+            : `Menampilkan ${penggajian.length} data penggajian`}
         </p>
 
-        {pagination.last_page > 1 && (
+        {pageNumbers.length > 1 && (
           <div className="flex items-center gap-2">
             <button
-              onClick={() => handlePageChange(pagination.current_page - 1)}
-              disabled={pagination.current_page === 1}
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+              disabled={!links?.prev}
               className="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Previous
@@ -323,9 +332,9 @@ const PenggajianPage = () => {
               {pageNumbers.map((page) => (
                 <button
                   key={page}
-                  onClick={() => handlePageChange(page)}
+                  onClick={() => setCurrentPage(page)}
                   className={`px-3 py-1 border rounded-lg text-sm ${
-                    page === pagination.current_page
+                    page === currentPageMeta
                       ? "bg-cyan-600 text-white border-cyan-600"
                       : "border-gray-300 hover:bg-gray-50"
                   }`}
@@ -335,8 +344,8 @@ const PenggajianPage = () => {
               ))}
             </div>
             <button
-              onClick={() => handlePageChange(pagination.current_page + 1)}
-              disabled={pagination.current_page === pagination.last_page}
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, lastPageMeta ?? p))}
+              disabled={!links?.next}
               className="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Next

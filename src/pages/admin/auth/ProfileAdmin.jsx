@@ -316,8 +316,17 @@ const HapusAkunForm = () => {
 
 // ─── Halaman Utama Profil ──────────────────────────────────────
 const ProfileAdmin = () => {
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  let user = {};
 
+  try {
+    const userData = localStorage.getItem("user");
+
+    if (userData && userData !== "undefined" && userData !== "null") {
+      user = JSON.parse(userData);
+    }
+  } catch (error) {
+    console.error("Error parsing user:", error);
+  }
   const getInitials = (name) => {
     if (!name) return "U";
     const parts = name.split(" ");

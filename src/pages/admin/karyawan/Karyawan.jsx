@@ -9,8 +9,8 @@ const KaryawanPage = () => {
   const [karyawan, setKaryawan] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [exportLoading, setExportLoading] = useState(false);
-  const [filterStatusAktif, setFilterStatusAktif] = useState("all");
+  // const [exportLoading, setExportLoading] = useState(false);
+  // const [filterStatusAktif, setFilterStatusAktif] = useState("all");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -37,50 +37,50 @@ const KaryawanPage = () => {
       k.email?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  const handleExportExcel = async () => {
-    try {
-      setExportLoading(true);
+  // const handleExportExcel = async () => {
+  //   try {
+  //     setExportLoading(true);
 
-      let queryParam = "";
-      if (filterStatusAktif !== "all") {
-        queryParam = `?status_aktif=${filterStatusAktif}`;
-      }
+  //     let queryParam = "";
+  //     if (filterStatusAktif !== "all") {
+  //       queryParam = `?status_aktif=${filterStatusAktif}`;
+  //     }
 
-      const response = await api.get(
-        `/karyawan/karyawan/download-excel${queryParam}`,
-        {
-          responseType: "blob",
-        },
-      );
+  //     const response = await api.get(
+  //       `/karyawan/karyawan/download-excel${queryParam}`,
+  //       {
+  //         responseType: "blob",
+  //       },
+  //     );
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
+  //     const url = window.URL.createObjectURL(new Blob([response.data]));
+  //     const link = document.createElement("a");
+  //     link.href = url;
 
-      let statusLabel = "Semua";
-      if (filterStatusAktif === "1") statusLabel = "Aktif";
-      if (filterStatusAktif === "0") statusLabel = "Tidak_Aktif";
+  //     let statusLabel = "Semua";
+  //     if (filterStatusAktif === "1") statusLabel = "Aktif";
+  //     if (filterStatusAktif === "0") statusLabel = "Tidak_Aktif";
 
-      const fileName = `Data_Karyawan_${statusLabel}_${new Date().toISOString().split("T")[0]}.xlsx`;
-      link.setAttribute("download", fileName);
+  //     const fileName = `Data_Karyawan_${statusLabel}_${new Date().toISOString().split("T")[0]}.xlsx`;
+  //     link.setAttribute("download", fileName);
 
-      document.body.appendChild(link);
-      link.click();
+  //     document.body.appendChild(link);
+  //     link.click();
 
-      link.parentNode.removeChild(link);
-      window.URL.revokeObjectURL(url);
+  //     link.parentNode.removeChild(link);
+  //     window.URL.revokeObjectURL(url);
 
-      succesError(`File ${fileName} berhasil didownload!`);
-    } catch (error) {
-      console.log(error);
-      showError(
-        error.response?.data?.message ||
-          "Gagal mengexport data. Pastikan ada data karyawan.",
-      );
-    } finally {
-      setExportLoading(false);
-    }
-  };
+  //     succesError(`File ${fileName} berhasil didownload!`);
+  //   } catch (error) {
+  //     console.log(error);
+  //     showError(
+  //       error.response?.data?.message ||
+  //         "Gagal mengexport data. Pastikan ada data karyawan.",
+  //     );
+  //   } finally {
+  //     setExportLoading(false);
+  //   }
+  // };
 
   const formatDate = (dateString) => {
     if (!dateString) return "-";
@@ -157,7 +157,7 @@ const KaryawanPage = () => {
             </button>
           </div>
 
-          <div className="border-t border-gray-200 pt-4">
+          {/* <div className="border-t border-gray-200 pt-4">
             <div className="flex flex-col md:flex-row md:items-center gap-4">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-gray-700">
@@ -202,7 +202,7 @@ const KaryawanPage = () => {
                 {filterStatusAktif === "0" && "Export karyawan tidak aktif"}
               </span>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
 

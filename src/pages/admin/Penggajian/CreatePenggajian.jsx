@@ -4,35 +4,36 @@ import api from "../../../services/api";
 import { ClipLoader } from "react-spinners";
 import { useNavigate } from "react-router-dom";
 import { showError, succesError } from "../../../utils/notify";
+import { mapBackendErrors } from "../../../utils/errorHandler";
+
+const INITIAL_FORM = {
+  karyawan_id: "",
+  jumlah_penghasilan_kotor: "",
+  jumlah_hari_kerja: "",
+  gaji_harian: "",
+  tagihan_bulan: "",
+  jumlah_lembur: "",
+  uang_thr: "",
+  status_penggajian: true,
+};
+
+const INITIAL_ERRORS = {
+  karyawan_id: "",
+  jumlah_penghasilan_kotor: "",
+  jumlah_hari_kerja: "",
+  gaji_harian: "",
+  tagihan_bulan: "",
+  jumlah_lembur: "",
+  uang_thr: "",
+  status_penggajian: "",
+};
 
 const CreatePenggajianPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [karyawan, setKaryawan] = useState([]);
-
-  const [formData, setFormData] = useState({
-    no_induk: "",
-    nik: "",
-    nama: "",
-    no_rek_bri: "",
-    posisi: "",
-    jumlah_penghasilan_kotor: "3732906",
-    bpjs_kesehatan: "37329",
-    bpjs_jht: "74658",
-    bpjs_jp: "37329",
-    total_bpjs: "149316",
-    uang_thr: "0",
-    jumlah_hari_kerja: "",
-    gaji_harian: "149316",
-    jumlah_lembur: "0",
-    upah_kotor_karyawan: "",
-    upah_diterima: "",
-    status_penggajian: true,
-    gajian_bulan: "",
-    periode_awal: "",
-    periode_akhir: "",
-    tanggal_cetak: "",
-  });
+  const [formData, setFormData] = useState(INITIAL_FORM);
+  const [errors, setErrors] = useState(INITIAL_ERRORS);
 
   useEffect(() => {
     getAllKaryawan();
@@ -63,6 +64,7 @@ const CreatePenggajianPage = () => {
     if (selectedKaryawan) {
       setFormData((prev) => ({
         ...prev,
+        karyawan_id: selectedKaryawan.id,
         no_induk: selectedKaryawan.nomor_induk,
         no_rek_bri: selectedKaryawan.no_rek_bri,
         nik: selectedKaryawan.nik,
@@ -74,17 +76,26 @@ const CreatePenggajianPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.nik) {
-      showError("Silakan pilih karyawan terlebih dahulu");
+    if (!validate()) return;
+
+    const requiredFields = [
+      "jumlah_penghasilan_kotor",
+      "jumlah_hari_kerja",
+      "gaji_harian",
+      "tagihan_bulan",
+    ];
+    const emptyFields = requiredFields.filter((field) => !formData[field]);
+
+    if (emptyFields.length > 0) {
+      console.log("Field kosong:", emptyFields);
+      showError(`Field kosong: ${emptyFields.join(", ")}`);
       return;
     }
+
     try {
       const submitData = {
         ...formData,
         jumlah_penghasilan_kotor: parseFloat(formData.jumlah_penghasilan_kotor),
-        bpjs_kesehatan: parseFloat(formData.bpjs_kesehatan),
-        bpjs_jht: parseFloat(formData.bpjs_jht),
-        bpjs_jp: parseFloat(formData.bpjs_jp),
         uang_thr: parseFloat(formData.uang_thr),
         jumlah_hari_kerja: parseFloat(formData.jumlah_hari_kerja),
         gaji_harian: parseFloat(formData.gaji_harian),
@@ -96,11 +107,62 @@ const CreatePenggajianPage = () => {
       succesError("Data penggajian berhasil ditambahkan");
       navigate("/penggajian");
     } catch (error) {
-      console.log(error);
-      showError(error.response?.data?.message || "Gagal menyimpan data");
+      if (error.response?.status === 422) {
+        const backendErrors = error.response.data.errors;
+
+        if (backendErrors) {
+          setErrors((prev) => ({
+            ...prev,
+            ...mapBackendErrors(backendErrors),
+          }));
+        }
+
+        return;
+      }
+
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        "Terjadi kesalahan pada server";
+
+      showError(errorMessage);
     } finally {
       setLoading(false);
     }
+  };
+
+  const validate = () => {
+    const newErrors = { ...INITIAL_ERRORS };
+    let isValid = true;
+
+    if (!formData.karyawan_id) {
+      newErrors.karyawan_id = "Silakan pilih karyawan";
+      isValid = false;
+    }
+
+    if (!formData.jumlah_penghasilan_kotor) {
+      newErrors.jumlah_penghasilan_kotor =
+        "Jumlah penghasilan kotor wajib diisi";
+      isValid = false;
+    }
+
+    if (!formData.jumlah_hari_kerja) {
+      newErrors.jumlah_hari_kerja = "Jumlah hari kerja wajib diisi";
+      isValid = false;
+    }
+
+    if (!formData.gaji_harian) {
+      newErrors.gaji_harian = "Gaji harian wajib diisi";
+      isValid = false;
+    }
+
+    if (!formData.tagihan_bulan) {
+      newErrors.tagihan_bulan = "Bulan tagihan wajib dipilih";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
   };
 
   const handleChange = (e) => {
@@ -122,6 +184,14 @@ const CreatePenggajianPage = () => {
       minimumFractionDigits: 0,
     }).format(value);
   };
+
+  const FieldError = ({ message }) =>
+    message ? <p className="text-red-500 text-xs mt-1">{message}</p> : null;
+
+  const inputClass = (field) =>
+    `w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent ${
+      errors[field] ? "border-red-500" : "border-gray-300"
+    }`;
 
   return (
     <div>
@@ -241,7 +311,7 @@ const CreatePenggajianPage = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Bagian <span className="text-red-500">*</span>
+                  Posisi <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -264,8 +334,7 @@ const CreatePenggajianPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Jumlah Penghasilan Kotor{" "}
-                  <span className="text-red-500">*</span>
+                  Jumlah Gaji Kotor <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -274,85 +343,12 @@ const CreatePenggajianPage = () => {
                   onChange={handleChange}
                   placeholder="0"
                   disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  className={inputClass("jumlah_penghasilan_kotor")}
                 />
-                <p className="text-xs text-red-600 mt-1">
+
+                <FieldError message={errors.jumlah_penghasilan_kotor} />
+                <p className="text-xs text-gray-500 mt-1">
                   {formatCurrency(formData.jumlah_penghasilan_kotor)}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  BPJS Kesehatan 1%<span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="bpjs_kesehatan"
-                  value={formData.bpjs_kesehatan}
-                  onChange={handleChange}
-                  placeholder="0"
-                  disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                />
-                <p className="text-xs text-red-600 mt-1">
-                  {formatCurrency(formData.bpjs_kesehatan)}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  BPJS Ketenagakerjaan (JHT) 2%
-                  <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="bpjs_jht"
-                  value={formData.bpjs_jht}
-                  onChange={handleChange}
-                  placeholder="0"
-                  disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                />
-                <p className="text-xs text-red-600 mt-1">
-                  {formatCurrency(formData.bpjs_jht)}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  BPJS Ketenagakerjaan (JP) 1%
-                  <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="bpjs_jp"
-                  value={formData.bpjs_jp}
-                  onChange={handleChange}
-                  placeholder="0"
-                  disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                />
-                <p className="text-xs text-red-600 mt-1">
-                  {formatCurrency(formData.bpjs_jp)}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Total BPJS
-                  <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="total_bpjs"
-                  value={formData.total_bpjs}
-                  onChange={handleChange}
-                  placeholder="0"
-                  disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                />
-                <p className="text-xs text-red-600 mt-1">
-                  {formatCurrency(formData.total_bpjs)}
                 </p>
               </div>
 
@@ -367,8 +363,10 @@ const CreatePenggajianPage = () => {
                   onChange={handleChange}
                   placeholder="0"
                   disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  className={inputClass("uang_thr")}
                 />
+
+                <FieldError message={errors.uang_thr} />
                 <p className="text-xs text-gray-500 mt-1">
                   {formatCurrency(formData.uang_thr)}
                 </p>
@@ -387,7 +385,7 @@ const CreatePenggajianPage = () => {
                     value={formData.jumlah_hari_kerja}
                     placeholder="0"
                     disabled={loading}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    className={inputClass("jumlah_hari_kerja")}
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
@@ -397,7 +395,7 @@ const CreatePenggajianPage = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Satuan <span className="text-red-500">*</span>
+                  Gaji Harian <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -406,8 +404,9 @@ const CreatePenggajianPage = () => {
                   onChange={handleChange}
                   placeholder="0"
                   disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  className={inputClass("gaji_harian")}
                 />
+                <FieldError message={errors.gaji_harian} />
                 <p className="text-xs text-gray-500 mt-1">
                   {formatCurrency(formData.gaji_harian)}
                 </p>
@@ -424,7 +423,7 @@ const CreatePenggajianPage = () => {
                   onChange={handleChange}
                   placeholder="0"
                   disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   {formatCurrency(formData.jumlah_lembur)}
@@ -435,113 +434,71 @@ const CreatePenggajianPage = () => {
 
           <div className="p-6 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Periode Gaji
+              Periode Penggajian
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Bulan Gajian <span className="text-red-500">*</span>
+                  Tagihan Bulan Ini <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
-                  name="gajian_bulan"
-                  value={formData.gajian_bulan}
+                  name="tagihan_bulan"
+                  value={formData.tagihan_bulan}
                   onChange={handleChange}
                   disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  className={inputClass("tagihan_bulan")}
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Periode Awal <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  name="periode_awal"
-                  value={formData.periode_awal}
-                  onChange={handleChange}
-                  disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Periode Akhir <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  name="periode_akhir"
-                  value={formData.periode_akhir}
-                  onChange={handleChange}
-                  disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                />
+                <FieldError message={errors.tagihan_bulan} />
               </div>
             </div>
           </div>
 
-          <div className="p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Status & Tanggal Cetak
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Status Penggajian <span className="text-red-500">*</span>
-                </label>
-                <div className="flex gap-4 mt-2">
-                  <label className="flex items-center cursor-pointer">
-                    <input
-                      type="radio"
-                      name="status_penggajian"
-                      value={true}
-                      checked={formData.status_penggajian === true}
-                      onChange={() =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          status_penggajian: true,
-                        }))
-                      }
-                      className="w-4 h-4 text-cyan-600 focus:ring-cyan-500 disabled:cursor-not-allowed"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">Selesai</span>
-                  </label>
-                  <label className="flex items-center cursor-pointer">
-                    <input
-                      type="radio"
-                      name="status_penggajian"
-                      value={false}
-                      checked={formData.status_penggajian === false}
-                      onChange={() =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          status_penggajian: false,
-                        }))
-                      }
-                      className="w-4 h-4 text-cyan-600 focus:ring-cyan-500 disabled:cursor-not-allowed"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">Pending</span>
-                  </label>
-                </div>
-              </div>
+          {/* <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Status Penggajian <span className="text-red-500">*</span>
+            </label>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tanggal Cetak <span className="text-red-500">*</span>
-                </label>
+            <div className="flex items-center gap-6">
+              <label className="flex items-center gap-2 cursor-pointer">
                 <input
-                  type="date"
-                  name="tanggal_cetak"
-                  value={formData.tanggal_cetak}
-                  onChange={handleChange}
+                  type="radio"
+                  name="status_penggajian"
+                  value="true"
+                  checked={formData.status_penggajian === true}
+                  onChange={() =>
+                    setFormData({
+                      ...formData,
+                      status_penggajian: true,
+                    })
+                  }
                   disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-4 h-4 text-cyan-600"
                 />
-              </div>
+                <span>Aktif</span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="status_penggajian"
+                  value="false"
+                  checked={formData.status_penggajian === false}
+                  onChange={() =>
+                    setFormData({
+                      ...formData,
+                      status_penggajian: false,
+                    })
+                  }
+                  disabled={loading}
+                  className="w-4 h-4 text-cyan-600"
+                />
+                <span>Tidak Aktif</span>
+              </label>
             </div>
-          </div>
+
+            <FieldError message={errors.status_penggajian} />
+          </div> */}
         </div>
       </form>
 

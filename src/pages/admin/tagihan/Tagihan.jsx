@@ -5,6 +5,16 @@ import { ClipLoader } from "react-spinners";
 import { useNavigate } from "react-router-dom";
 import { succesError, showError } from "../../../utils/notify";
 
+const POSISI_OPTIONS = [
+  { value: "", label: "Semua Posisi" },
+  { value: "cleaning_service", label: "Cleaning Service" },
+  { value: "supir", label: "Supir" },
+  { value: "security", label: "Security" },
+  { value: "admin", label: "Admin" },
+  { value: "manager", label: "Manager" },
+  { value: "operator", label: "Operator" },
+];
+
 const TagihanPage = () => {
   const navigate = useNavigate();
   const [tagihan, setTagihan] = useState([]);
@@ -16,11 +26,36 @@ const TagihanPage = () => {
   const [meta, setMeta] = useState(null);
   const [links, setLinks] = useState(null);
 
-  // State untuk filter export (periode awal & akhir)
-  const [periodeTagihan, setPeriodeTagihan] = useState("");
+  // State filter export
+  const [filterBulan, setFilterBulan] = useState(new Date().getMonth() + 1);
+  const [filterTahun, setFilterTahun] = useState(new Date().getFullYear());
+  const [posisiExport, setPosisiExport] = useState("cleaning_service");
 
   // State search
   const [search, setSearch] = useState("");
+
+  const getNamaBulan = (bulan) => {
+    const namaBulan = [
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
+    ];
+    return namaBulan[bulan - 1];
+  };
+
+  const generateYears = () => {
+    const current = new Date().getFullYear();
+    return Array.from({ length: 7 }, (_, i) => current - 5 + i);
+  };
 
   const getAllTagihan = async (page = 1) => {
     try {
@@ -39,16 +74,15 @@ const TagihanPage = () => {
   useEffect(() => {
     getAllTagihan(currentPage);
 
-    const today = new Date();
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-    // const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-
-    setPeriodeTagihan(firstDay.toISOString().split("T")[0]);
+    // Set default periode ke bulan ini
+    // const today = new Date();
+    // const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    // setPeriodeTagihan(firstDay.toISOString().split("T")[0]);
   }, [currentPage]);
 
   const handleDelete = async (id) => {
     const confirmDelete = window.confirm(
-      "Apakah Anda yakin ingin menghapus tagihan ini?"
+      "Apakah Anda yakin ingin menghapus tagihan ini?",
     );
     if (!confirmDelete) return;
 
@@ -63,51 +97,59 @@ const TagihanPage = () => {
   };
 
   const handleExportExcel = async () => {
-    if (!periodeTagihan) {
-      showError("Mohon pilih periode Tagihan");
-      return;
-    }
-
     try {
       setExportLoading(true);
-      const formattedPeriodeTagihan = periodeTagihan.replace(/-/g, "/");
+
+      const tagihan_bulan = `${filterTahun}-${String(filterBulan).padStart(2, "0")}-01`;
+
+      const params = new URLSearchParams();
+      params.append("tagihan_bulan", tagihan_bulan);
+
+      if (posisiExport) {
+        params.append("posisi", posisiExport);
+      }
 
       const response = await api.get(
-        `/tagihan/export/excel?tagihan-bulan=${formattedPeriodeTagihan}`,
-        { responseType: "blob" }
+        `/tagihan/export/excel?${params.toString()}`,
+        { responseType: "blob" },
       );
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const blob = new Blob([response.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+
+      const url = window.URL.createObjectURL(blob);
+
       const link = document.createElement("a");
+      const fileName = `Tagihan_${getNamaBulan(filterBulan)}_${filterTahun}.xlsx`;
+
       link.href = url;
-      const fileName = `Tagihan_${periodeTagihan}.xlsx`;
-      link.setAttribute("download", fileName);
+      link.download = fileName;
+
       document.body.appendChild(link);
       link.click();
-      link.parentNode.removeChild(link);
+      link.remove();
+
       window.URL.revokeObjectURL(url);
 
-      succesError(`File ${fileName} berhasil didownload!`);
+      succesError("Export Excel berhasil!");
     } catch (error) {
       console.log(error);
-      showError(
-        error.response?.data?.message ||
-          "Gagal mengexport data. Pastikan ada data tagihan untuk periode yang dipilih."
-      );
+      showError(error.response?.data?.message || "Gagal export Excel");
     } finally {
       setExportLoading(false);
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "-";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    });
-  };
+  // const formatDate = (dateString) => {
+  //   if (!dateString) return "-";
+  //   const date = new Date(dateString);
+  //   return date.toLocaleDateString("id-ID", {
+  //     day: "2-digit",
+  //     month: "long",
+  //     year: "numeric",
+  //   });
+  // };
 
   const formatCurrency = (amount) => {
     if (!amount) return "Rp 0";
@@ -131,7 +173,11 @@ const TagihanPage = () => {
 
   // Generate page numbers dari meta.links
   const pageNumbers =
-    meta?.links?.filter((l) => l.page !== null).map((l) => l.page) || [];
+    meta?.links
+      ?.filter(
+        (l) => l.label !== "&laquo; Previous" && l.label !== "Next &raquo;",
+      )
+      ?.map((l) => ({ label: l.label, url: l.url })) || [];
 
   return (
     <div>
@@ -144,6 +190,7 @@ const TagihanPage = () => {
 
       <div className="bg-white rounded-lg shadow p-4 mb-6">
         <div className="flex flex-col gap-4">
+          {/* Search & Tambah */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="relative flex-1 max-w-md">
               <Search
@@ -168,49 +215,95 @@ const TagihanPage = () => {
             </button>
           </div>
 
-          {/* Export Excel Section */}
           <div className="border-t border-gray-200 pt-4">
-            <div className="flex flex-col md:flex-row md:items-center gap-4">
-              <span className="text-sm font-medium text-gray-700">
-                Export Excel:
-              </span>
+            <p className="text-sm font-medium text-gray-700 mb-3">
+              Export Excel
+            </p>
 
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-600">Periode Tagihan:</label>
-                <input
-                  type="date"
-                  value={periodeTagihan}
-                  onChange={(e) => setPeriodeTagihan(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                />
+            <div className="flex flex-col md:flex-row md:items-end gap-4 flex-wrap">
+              {/* FILTER GROUP */}
+              <div className="flex flex-col md:flex-row md:items-end gap-4">
+                {/* BULAN */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-gray-500">Bulan</label>
+                  <select
+                    value={filterBulan}
+                    onChange={(e) => setFilterBulan(parseInt(e.target.value))}
+                    className="px-3 py-2 border rounded-lg text-sm"
+                  >
+                    {Array.from({ length: 12 }, (_, i) => (
+                      <option key={i + 1} value={i + 1}>
+                        {getNamaBulan(i + 1)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* TAHUN */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-gray-500">Tahun</label>
+                  <select
+                    value={filterTahun}
+                    onChange={(e) => setFilterTahun(parseInt(e.target.value))}
+                    className="px-3 py-2 border rounded-lg text-sm"
+                  >
+                    {generateYears().map((year) => (
+                      <option key={year} value={year}>
+                        {year}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* POSISI */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-gray-500">Posisi</label>
+                  <select
+                    value={posisiExport}
+                    onChange={(e) => setPosisiExport(e.target.value)}
+                    className="px-3 py-2 border rounded-lg text-sm"
+                  >
+                    {POSISI_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* BUTTON - sekarang DEKAT POSISI */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-transparent">Export</label>
+                  <button
+                    onClick={handleExportExcel}
+                    disabled={exportLoading}
+                    className="flex items-center gap-2 bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:bg-green-400 disabled:cursor-not-allowed text-sm"
+                  >
+                    {exportLoading ? (
+                      <>
+                        <ClipLoader color="#ffffff" size={16} />
+                        <span>Exporting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download size={18} />
+                        <span>Export Excel</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
-
-              
-
-              <button
-                onClick={handleExportExcel}
-                disabled={exportLoading || !periodeTagihan}
-                className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:bg-green-400 disabled:cursor-not-allowed"
-              >
-                {exportLoading ? (
-                  <>
-                    <ClipLoader color="#ffffff" size={16} />
-                    <span>Exporting...</span>
-                  </>
-                ) : (
-                  <>
-                    <Download size={20} />
-                    <span>Export Excel</span>
-                  </>
-                )}
-              </button>
-
-              {periodeTagihan && (
-                <span className="text-sm text-gray-500">
-                  Export data: {formatDate(periodeTagihan)}
-                </span>
-              )}
             </div>
+
+            {/* INFO TEXT */}
+            {filterBulan && (
+              <p className="text-xs text-gray-400 mt-2">
+                Export: {getNamaBulan(filterBulan)} {filterTahun} •{" "}
+                {posisiExport
+                  ? posisiExport.replace(/_/g, " ")
+                  : "Semua posisi"}
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -270,7 +363,6 @@ const TagihanPage = () => {
                 filteredTagihan.map((t, index) => (
                   <tr key={t.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {/* Nomor urut tetap benar meski paginasi */}
                       {(meta ? (meta.current_page - 1) * meta.per_page : 0) +
                         index +
                         1}
@@ -344,19 +436,23 @@ const TagihanPage = () => {
           </button>
 
           <div className="flex items-center gap-1">
-            {pageNumbers.map((page) => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`px-3 py-1 border rounded-lg text-sm ${
-                  page === meta?.current_page
-                    ? "bg-cyan-600 text-white border-cyan-600"
-                    : "border-gray-300 hover:bg-gray-50"
-                }`}
-              >
-                {page}
-              </button>
-            ))}
+            {pageNumbers.map((item, idx) => {
+              const pageNum = parseInt(item.label);
+              if (isNaN(pageNum)) return null;
+              return (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={`px-3 py-1 border rounded-lg text-sm ${
+                    pageNum === meta?.current_page
+                      ? "bg-cyan-600 text-white border-cyan-600"
+                      : "border-gray-300 hover:bg-gray-50"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
           </div>
 
           <button

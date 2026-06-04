@@ -69,7 +69,7 @@ const FormLogin = () => {
         succesError(res.data.message || "Login berhasil");
         setFormData({ email: "", password: "" });
 
-        setTimeout(() => navigate("/rekrutmen"), 1000);
+        setTimeout(() => navigate("/dashboard"), 1000);
       } else {
         setAuthError("Token tidak ditemukan, coba lagi.");
       }
