@@ -19,18 +19,31 @@ import api from "../../../services/api";
 import Navbar from "../../layouts/Navbar";
 import Footer from "../../layouts/Footer";
 import { showError, succesError } from "../../../utils/notify";
+import { mapBackendErrors } from "../../../utils/errorHandler";
+
+const INITIAL_FORM = {
+  nama: "",
+  email: "",
+  no_wa: "",
+  perusahaan: "",
+  subjek: "",
+  isi: "",
+};
+
+const INITIAL_ERRORS = {
+  nama: "",
+  email: "",
+  no_wa: "",
+  perusahaan: "",
+  subjek: "",
+  isi: "",
+};
 
 const ContactPage = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [formData, setFormData] = useState({
-    nama: "",
-    email: "",
-    no_wa: "",
-    perusahaan: "",
-    subjek: "",
-    isi: "",
-  });
+  const [formData, setFormData] = useState(INITIAL_FORM);
+  const [errors, setErrors] = useState(INITIAL_ERRORS);
 
   const companyInfo = {
     name: "PT Suryatama Domandiri",
@@ -53,19 +66,72 @@ const ContactPage = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    if (errors[name]) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: "",
+      }));
+    }
+  };
+
+  const validate = () => {
+    const newErrors = {};
+
+    if (!formData.nama.trim()) {
+      newErrors.nama = "Nama wajib diisi";
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = "Email wajib diisi";
+    } else if (
+      !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.email)
+    ) {
+      newErrors.email = "Format email tidak valid";
+    }
+
+    if (!formData.no_wa.trim()) {
+      newErrors.no_wa = "Nomor WhatsApp wajib diisi";
+    } else if (!/^(\+62|62|0)[0-9]{9,13}$/.test(formData.no_wa)) {
+      newErrors.no_wa = "Nomor WhatsApp tidak valid";
+    }
+
+    if (!formData.subjek.trim()) {
+      newErrors.subjek = "Subjek wajib diisi";
+    }
+
+    if (!formData.isi.trim()) {
+      newErrors.isi = "Pesan wajib diisi";
+    }
+
+    setErrors(newErrors);
+
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (
-      !formData.nama ||
-      !formData.email ||
-      !formData.subjek ||
-      !formData.isi
-    ) {
-      alert("Mohon lengkapi semua field yang wajib diisi");
+    if (!validate()) return;
+
+    const requiredFields = [
+      "nama",
+      "email",
+      "no_wa",
+      "perusahaan",
+      "subjek",
+      "isi",
+    ];
+    const emptyFields = requiredFields.filter((field) => !formData[field]);
+
+    if (emptyFields.length > 0) {
+      console.log("Field kosong:", emptyFields);
+      showError(`Field kosong: ${emptyFields.join(", ")}`);
       return;
     }
 
@@ -88,12 +154,37 @@ const ContactPage = () => {
         setSuccess(false);
       }, 5000);
     } catch (error) {
-      console.log(error);
-      showError(error.response?.data?.message || "Gagal mengirim pesan");
+      if (error.response?.status === 422) {
+        const backendErrors = error.response.data.errors;
+
+        if (backendErrors) {
+          setErrors((prev) => ({
+            ...prev,
+            ...mapBackendErrors(backendErrors),
+          }));
+        }
+
+        return;
+      }
+
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        "Terjadi kesalahan pada server";
+
+      showError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
+
+  const FieldError = ({ message }) =>
+    message ? <p className="text-red-500 text-xs mt-1">{message}</p> : null;
+
+  const inputClass = (field) =>
+    `w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent ${
+      errors[field] ? "border-red-500" : "border-gray-300"
+    }`;
 
   return (
     <>
@@ -317,8 +408,10 @@ const ContactPage = () => {
                           placeholder="John Doe"
                           required
                           disabled={loading}
-                          className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 transition-all"
+                          className={`${inputClass("nama")} pl-11 pr-4 py-3`}
                         />
+
+                        <FieldError message={errors.nama} />
                       </div>
                     </div>
 
@@ -339,8 +432,10 @@ const ContactPage = () => {
                           placeholder="john@email.com"
                           required
                           disabled={loading}
-                          className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 transition-all"
+                          className={`${inputClass("email")} pl-11 pr-4 py-3`}
                         />
+
+                        <FieldError message={errors.email} />
                       </div>
                     </div>
                   </div>
@@ -361,8 +456,10 @@ const ContactPage = () => {
                           onChange={handleChange}
                           placeholder="08xxxxxxxxxx"
                           disabled={loading}
-                          className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 transition-all"
+                          className={`${inputClass("no_wa")} pl-11 pr-4 py-3`}
                         />
+
+                        <FieldError message={errors.no_wa} />
                       </div>
                     </div>
 
@@ -383,8 +480,10 @@ const ContactPage = () => {
                           onChange={handleChange}
                           placeholder="PT Nama Perusahaan"
                           disabled={loading}
-                          className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 transition-all"
+                          className={`${inputClass("perusahaan")} pl-11 pr-4 py-3`}
                         />
+
+                        <FieldError message={errors.perusahaan} />
                       </div>
                     </div>
                   </div>
@@ -406,8 +505,10 @@ const ContactPage = () => {
                         placeholder="Perihal pesan Anda"
                         required
                         disabled={loading}
-                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 transition-all"
+                        className={`${inputClass("subjek")} pl-11 pr-4 py-3`}
                       />
+
+                      <FieldError message={errors.subjek} />
                     </div>
                   </div>
 
@@ -423,8 +524,10 @@ const ContactPage = () => {
                       required
                       disabled={loading}
                       rows={6}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 resize-none transition-all"
+                      className={inputClass("isi")}
                     />
+
+                    <FieldError message={errors.isi} />
                   </div>
 
                   <button
