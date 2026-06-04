@@ -120,11 +120,11 @@ const CreateKaryawanPage = () => {
   };
 
   const handleNumberOnly = (e) => {
-  const { name, value } = e.target;
-  if (!/^\d*$/.test(value)) return; 
-  setFormData((prev) => ({ ...prev, [name]: value }));
-  setErrors((prev) => ({ ...prev, [name]: "" }));
-};
+    const { name, value } = e.target;
+    if (!/^\d*$/.test(value)) return;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: "" }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();

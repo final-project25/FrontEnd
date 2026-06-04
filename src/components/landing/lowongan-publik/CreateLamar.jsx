@@ -274,6 +274,13 @@ const CreateLamaranPage = () => {
     }
   };
 
+  const handleNumberOnly = (e) => {
+    const { name, value } = e.target;
+    if (!/^\d*$/.test(value)) return;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: "" }));
+  };
+
   const handleCopyKode = () => {
     navigator.clipboard.writeText(kodeLamaran);
     succesError("Kode berhasil disalin!");
@@ -507,7 +514,7 @@ const CreateLamaranPage = () => {
                       type="text"
                       name="nik"
                       value={formData.nik}
-                      onChange={handleChange}
+                      onChange={handleNumberOnly}
                       placeholder="16 digit NIK"
                       maxLength="16"
                       className={inputClass("nik")}
@@ -552,7 +559,7 @@ const CreateLamaranPage = () => {
                       type="text"
                       name="no_wa"
                       value={formData.no_wa}
-                      onChange={handleChange}
+                      onChange={handleNumberOnly}
                       placeholder="08xxxxxxxxxx"
                       maxLength="13"
                       className={inputClass("no_wa")}
