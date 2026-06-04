@@ -11,7 +11,7 @@ const INITIAL_FORM = {
   jumlah_penghasilan_kotor: "",
   jumlah_hari_kerja: "",
   gaji_harian: "",
-  tagihan_bulan: "",
+  gajian_bulan: "",
   jumlah_lembur: "",
   uang_thr: "",
   status_penggajian: true,
@@ -22,7 +22,7 @@ const INITIAL_ERRORS = {
   jumlah_penghasilan_kotor: "",
   jumlah_hari_kerja: "",
   gaji_harian: "",
-  tagihan_bulan: "",
+  gajian_bulan: "",
   jumlah_lembur: "",
   uang_thr: "",
   status_penggajian: "",
@@ -82,7 +82,7 @@ const CreatePenggajianPage = () => {
       "jumlah_penghasilan_kotor",
       "jumlah_hari_kerja",
       "gaji_harian",
-      "tagihan_bulan",
+      "gajian_bulan",
     ];
     const emptyFields = requiredFields.filter((field) => !formData[field]);
 
@@ -156,8 +156,8 @@ const CreatePenggajianPage = () => {
       isValid = false;
     }
 
-    if (!formData.tagihan_bulan) {
-      newErrors.tagihan_bulan = "Bulan tagihan wajib dipilih";
+    if (!formData.gajian_bulan) {
+      newErrors.gajian_bulan = "Bulan tagihan wajib dipilih";
       isValid = false;
     }
 
@@ -443,13 +443,13 @@ const CreatePenggajianPage = () => {
                 </label>
                 <input
                   type="date"
-                  name="tagihan_bulan"
-                  value={formData.tagihan_bulan}
+                  name="gajian_bulan"
+                  value={formData.gajian_bulan}
                   onChange={handleChange}
                   disabled={loading}
-                  className={inputClass("tagihan_bulan")}
+                  className={inputClass("gajian_bulan")}
                 />
-                <FieldError message={errors.tagihan_bulan} />
+                <FieldError message={errors.gajian_bulan} />
               </div>
             </div>
           </div>

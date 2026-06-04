@@ -3,10 +3,13 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ClipLoader } from "react-spinners";
 import api from "../../../services/api";
+import { mapBackendErrors } from "../../../utils/errorHandler";
+import { showError, succesError } from "../../../utils/notify";
 
 const CreateRekrutmenPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
     posisi: "",
     lokasi_kerja: "",
@@ -17,12 +20,44 @@ const CreateRekrutmenPage = () => {
     status_lowongan: "aktif",
   });
 
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.posisi.trim())
+      newErrors.posisi = "Posisi/Jabatan wajib diisi.";
+
+    if (!formData.lokasi_kerja.trim())
+      newErrors.lokasi_kerja = "Lokasi Kerja wajib diisi.";
+
+    if (!formData.jenis_kerja)
+      newErrors.jenis_kerja = "Jenis Kerja wajib dipilih.";
+
+    if (!formData.range_gaji.trim())
+      newErrors.range_gaji = "Range Gaji wajib diisi.";
+
+    if (!formData.deadline_lowongan)
+      newErrors.deadline_lowongan = "Deadline Lowongan wajib diisi.";
+    else {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const deadline = new Date(formData.deadline_lowongan);
+      if (deadline < today)
+        newErrors.deadline_lowongan = "Deadline tidak boleh sebelum hari ini.";
+    }
+
+    return newErrors;
+  };
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+    // Clear error on change
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
   };
 
   const handleCancel = () => {
@@ -38,30 +73,20 @@ const CreateRekrutmenPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validasi form
-    const requiredFields = [
-      "posisi",
-      "lokasi_kerja",
-      "jenis_kerja",
-      "range_gaji",
-      "deadline_lowongan",
-    ];
-
-    const emptyFields = requiredFields.filter((field) => !formData[field]);
-
-    if (emptyFields.length > 0) {
-      alert("Mohon lengkapi semua field yang bertanda *");
+    // Client-side validation
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
       return;
     }
 
     setLoading(true);
+    setErrors({});
 
     try {
-      const response = await api.post("/lowongan", formData);
+      await api.post("/lowongan", formData);
 
-      console.log("Response:", response.data);
-
-      alert("Lowongan kerja berhasil dibuat");
+      succesError("Lowongan kerja berhasil dibuat");
 
       setTimeout(() => {
         navigate("/rekrutmen");
@@ -70,11 +95,13 @@ const CreateRekrutmenPage = () => {
       console.log(error);
 
       if (error.response?.status === 422) {
-        const errors = error.response.data.errors;
-        const errorMessages = Object.values(errors).flat().join(", ");
-        alert(errorMessages || "Data tidak valid");
+        const backendErrors = mapBackendErrors(error.response.data.errors);
+        setErrors(backendErrors);
+        showError("Mohon periksa kembali data yang diisi.");
       } else {
-        alert(error.response?.data?.message || "Gagal membuat lowongan kerja");
+        showError(
+          error.response?.data?.message || "Gagal membuat lowongan kerja"
+        );
       }
     } finally {
       setLoading(false);
@@ -118,9 +145,13 @@ const CreateRekrutmenPage = () => {
                   onChange={handleChange}
                   placeholder="Contoh: Supir, Security, Admin"
                   disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  required
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                    errors.posisi ? "border-red-500" : "border-gray-300"
+                  }`}
                 />
+                {errors.posisi && (
+                  <p className="text-red-500 text-sm mt-1">{errors.posisi}</p>
+                )}
               </div>
 
               <div>
@@ -134,9 +165,13 @@ const CreateRekrutmenPage = () => {
                   onChange={handleChange}
                   placeholder="Contoh: Jakarta, DKI Jakarta"
                   disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  required
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                    errors.lokasi_kerja ? "border-red-500" : "border-gray-300"
+                  }`}
                 />
+                {errors.lokasi_kerja && (
+                  <p className="text-red-500 text-sm mt-1">{errors.lokasi_kerja}</p>
+                )}
               </div>
 
               <div>
@@ -148,14 +183,18 @@ const CreateRekrutmenPage = () => {
                   value={formData.jenis_kerja}
                   onChange={handleChange}
                   disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  required
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                    errors.jenis_kerja ? "border-red-500" : "border-gray-300"
+                  }`}
                 >
                   <option value="Full Time">Full Time</option>
                   <option value="Part Time">Part Time</option>
                   <option value="Kontrak">Kontrak</option>
                   <option value="Freelance">Freelance</option>
                 </select>
+                {errors.jenis_kerja && (
+                  <p className="text-red-500 text-sm mt-1">{errors.jenis_kerja}</p>
+                )}
               </div>
 
               <div>
@@ -169,12 +208,15 @@ const CreateRekrutmenPage = () => {
                   onChange={handleChange}
                   placeholder="Contoh: Rp 4.000.000 - Rp 5.000.000"
                   disabled={loading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  required
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                    errors.range_gaji ? "border-red-500" : "border-gray-300"
+                  }`}
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Format: Rp X - Rp Y
-                </p>
+                {errors.range_gaji ? (
+                  <p className="text-red-500 text-sm mt-1">{errors.range_gaji}</p>
+                ) : (
+                  <p className="text-xs text-gray-500 mt-1">Format: Rp X - Rp Y</p>
+                )}
               </div>
             </div>
           </div>
@@ -222,13 +264,18 @@ const CreateRekrutmenPage = () => {
                     value={formData.deadline_lowongan}
                     onChange={handleChange}
                     disabled={loading}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-                    required
+                    className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                      errors.deadline_lowongan ? "border-red-500" : "border-gray-300"
+                    }`}
                   />
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Tanggal terakhir penerimaan pelamar
-                </p>
+                {errors.deadline_lowongan ? (
+                  <p className="text-red-500 text-sm mt-1">{errors.deadline_lowongan}</p>
+                ) : (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Tanggal terakhir penerimaan pelamar
+                  </p>
+                )}
               </div>
 
               <div>
