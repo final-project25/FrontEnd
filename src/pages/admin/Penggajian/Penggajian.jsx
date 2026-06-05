@@ -1,4 +1,4 @@
-import { Search, Plus, Eye, Edit, Trash2, Download, Send } from "lucide-react";
+import { Search, Plus, Eye, Edit, Trash2, Download, Send, Copy, X, MessageCircle, CheckCircle, AlertCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import api from "../../../services/api";
 import { useNavigate } from "react-router-dom";
@@ -36,6 +36,15 @@ const PenggajianPage = () => {
   const [penggajian, setPenggajian] = useState([]);
   const [loading, setLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
+  const [copyLoading, setCopyLoading] = useState(false);
+  const [showCopyModal, setShowCopyModal] = useState(false);
+  const [bulkWaLoading, setBulkWaLoading] = useState(false);
+  const [showBulkWaModal, setShowBulkWaModal] = useState(false);
+  const [bulkWaResult, setBulkWaResult] = useState(null); // null = form, object = hasil
+  const [bulkWaForm, setBulkWaForm] = useState({
+    bulan: new Date().getMonth() + 1,
+    tahun: new Date().getFullYear(),
+  });
   const [slipGajiKaryawan, setSlipGajiKaryawan] = useState({});
   const [filterTahun, setFilterTahun] = useState(new Date().getFullYear());
   const [filterBulan, setFilterBulan] = useState(new Date().getMonth() + 1);
@@ -43,6 +52,19 @@ const PenggajianPage = () => {
   const [meta, setMeta] = useState(null);
   const [links, setLinks] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // State untuk copy modal
+  const currentYear = new Date().getFullYear();
+  const prevMonth = new Date().getMonth() === 0 ? 12 : new Date().getMonth();
+  const prevYear = new Date().getMonth() === 0 ? currentYear - 1 : currentYear;
+  const [copyForm, setCopyForm] = useState({
+    refBulan: prevMonth,
+    refTahun: prevYear,
+    newBulan: new Date().getMonth() + 1,
+    newTahun: currentYear,
+    copy_all: true,
+    adjust_thr: false,
+  });
 
   useEffect(() => {
     fetchPenggajian(currentPage);
@@ -95,6 +117,79 @@ const PenggajianPage = () => {
     }
   };
 
+  const handleCopyPreviousMonth = async () => {
+    const bulan_referensi = `${copyForm.refTahun}-${String(copyForm.refBulan).padStart(2, "0")}-01`;
+    const bulan_baru = `${copyForm.newTahun}-${String(copyForm.newBulan).padStart(2, "0")}-01`;
+
+    if (bulan_referensi === bulan_baru) {
+      showError("Bulan referensi dan bulan baru tidak boleh sama.");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Salin data penggajian dari ${getNamaBulan(copyForm.refBulan)} ${copyForm.refTahun} ke ${getNamaBulan(copyForm.newBulan)} ${copyForm.newTahun}?\n\nProses ini akan membuat data penggajian baru berdasarkan bulan referensi.`
+      )
+    )
+      return;
+
+    try {
+      setCopyLoading(true);
+      await api.post("/penggajian/copy-previous-month", {
+        bulan_referensi,
+        bulan_baru,
+        copy_all: copyForm.copy_all,
+        adjust_thr: copyForm.adjust_thr,
+      });
+      succesError(
+        `Berhasil menyalin penggajian ${getNamaBulan(copyForm.refBulan)} ${copyForm.refTahun} ke ${getNamaBulan(copyForm.newBulan)} ${copyForm.newTahun}`
+      );
+      setShowCopyModal(false);
+      fetchPenggajian(currentPage);
+    } catch (error) {
+      console.error(error);
+      showError(error.response?.data?.message || "Gagal menyalin data penggajian");
+    } finally {
+      setCopyLoading(false);
+    }
+  };
+
+  const handleBulkSendWhatsApp = async () => {
+    const gajian_bulan = `${bulkWaForm.tahun}-${String(bulkWaForm.bulan).padStart(2, "0")}-01`;
+    try {
+      setBulkWaLoading(true);
+      const response = await api.post(`/penggajian/send-whatsapp-bulk`, {
+        gajian_bulan,
+      });
+      const result = response.data.data;
+      setBulkWaResult(result);
+    } catch (error) {
+      console.error(error);
+      showError(error.response?.data?.message || "Gagal mengambil data slip gaji bulk");
+    } finally {
+      setBulkWaLoading(false);
+    }
+  };
+
+  const handleOpenAllWa = () => {
+    if (!bulkWaResult?.berhasil?.length) return;
+    // Buka tab pertama langsung (diizinkan browser karena direct click)
+    window.open(bulkWaResult.berhasil[0].whatsapp_url, "_blank");
+    // Sisanya dengan delay — browser modern sering blokir ini,
+    // user sebaiknya klik link per karyawan di daftar
+    bulkWaResult.berhasil.slice(1).forEach((item, index) => {
+      setTimeout(() => {
+        window.open(item.whatsapp_url, "_blank");
+      }, (index + 1) * 500);
+    });
+    succesError(`${bulkWaResult.berhasil_count} slip gaji berhasil dibuka di WhatsApp`);
+  };
+
+  const handleCloseBulkWaModal = () => {
+    setShowBulkWaModal(false);
+    setBulkWaResult(null);
+  };
+
   const handleExportExcel = async () => {
   try {
     setExportLoading(true);
@@ -141,14 +236,22 @@ const PenggajianPage = () => {
     );
   });
 
-  // ✅ Gunakan getValue() untuk handle nilai array dari backend
+  // Normalisasi semua nilai meta yang bisa datang sebagai array
   const currentPageMeta = getValue(meta?.current_page);
   const perPageMeta = getValue(meta?.per_page);
   const lastPageMeta = getValue(meta?.last_page);
   const totalMeta = getValue(meta?.total);
+  const fromMeta = getValue(meta?.from);
+  const toMeta = getValue(meta?.to);
 
-  const pageNumbers =
-    meta?.links?.filter((l) => l.page !== null).map((l) => l.page) || [];
+  // Filter hanya nomor halaman (bukan label navigasi "Sebelumnya"/"Berikutnya"), lalu deduplikasi
+  const pageNumbers = [
+    ...new Set(
+      meta?.links
+        ?.filter((l) => l.page !== null && !isNaN(Number(l.label)))
+        .map((l) => l.page) || []
+    ),
+  ];
 
   return (
     <div>
@@ -176,6 +279,20 @@ const PenggajianPage = () => {
             >
               <Plus size={20} />
               <span>Tambah Penggajian</span>
+            </button>
+            <button
+              onClick={() => setShowCopyModal(true)}
+              className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              <Copy size={20} />
+              <span>Salin Bulan Lalu</span>
+            </button>
+            <button
+              onClick={() => { setBulkWaResult(null); setShowBulkWaModal(true); }}
+              className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+            >
+              <MessageCircle size={20} />
+              <span>Kirim Semua Slip Gaji</span>
             </button>
           </div>
 
@@ -315,7 +432,7 @@ const PenggajianPage = () => {
       <div className="mt-4 flex items-center justify-between">
         <p className="text-sm text-gray-600">
           {meta
-            ? `Menampilkan ${meta.from ?? 0}–${meta.to ?? 0} dari ${totalMeta} data penggajian`
+            ? `Menampilkan ${fromMeta ?? 0}–${toMeta ?? 0} dari ${totalMeta ?? 0} data penggajian`
             : `Menampilkan ${penggajian.length} data penggajian`}
         </p>
 
@@ -323,7 +440,7 @@ const PenggajianPage = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-              disabled={!links?.prev}
+              disabled={!links?.prev || loading}
               className="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Previous
@@ -333,6 +450,7 @@ const PenggajianPage = () => {
                 <button
                   key={page}
                   onClick={() => setCurrentPage(page)}
+                  disabled={loading}
                   className={`px-3 py-1 border rounded-lg text-sm ${
                     page === currentPageMeta
                       ? "bg-cyan-600 text-white border-cyan-600"
@@ -345,7 +463,7 @@ const PenggajianPage = () => {
             </div>
             <button
               onClick={() => setCurrentPage((p) => Math.min(p + 1, lastPageMeta ?? p))}
-              disabled={!links?.next}
+              disabled={!links?.next || loading}
               className="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Next
@@ -353,6 +471,405 @@ const PenggajianPage = () => {
           </div>
         )}
       </div>
+      {/* Modal Copy Bulan Sebelumnya */}
+      {showCopyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4">
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Copy size={20} className="text-purple-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Salin Data Penggajian
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    Copy data dari bulan sebelumnya ke bulan baru
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowCopyModal(false)}
+                disabled={copyLoading}
+                className="text-gray-400 hover:text-gray-600 disabled:cursor-not-allowed"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 space-y-5">
+              {/* Bulan Referensi */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Bulan Referensi (Sumber)
+                </label>
+                <div className="flex gap-3">
+                  <select
+                    value={copyForm.refBulan}
+                    onChange={(e) =>
+                      setCopyForm((p) => ({ ...p, refBulan: parseInt(e.target.value) }))
+                    }
+                    disabled={copyLoading}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100"
+                  >
+                    {Array.from({ length: 12 }, (_, i) => (
+                      <option key={i + 1} value={i + 1}>
+                        {getNamaBulan(i + 1)}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={copyForm.refTahun}
+                    onChange={(e) =>
+                      setCopyForm((p) => ({ ...p, refTahun: parseInt(e.target.value) }))
+                    }
+                    disabled={copyLoading}
+                    className="w-28 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100"
+                  >
+                    {generateYears().map((year) => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Panah */}
+              <div className="flex items-center justify-center">
+                <div className="flex items-center gap-2 text-gray-400 text-sm">
+                  <div className="h-px w-16 bg-gray-200" />
+                  <span>disalin ke</span>
+                  <div className="h-px w-16 bg-gray-200" />
+                </div>
+              </div>
+
+              {/* Bulan Baru */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Bulan Baru (Tujuan)
+                </label>
+                <div className="flex gap-3">
+                  <select
+                    value={copyForm.newBulan}
+                    onChange={(e) =>
+                      setCopyForm((p) => ({ ...p, newBulan: parseInt(e.target.value) }))
+                    }
+                    disabled={copyLoading}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100"
+                  >
+                    {Array.from({ length: 12 }, (_, i) => (
+                      <option key={i + 1} value={i + 1}>
+                        {getNamaBulan(i + 1)}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={copyForm.newTahun}
+                    onChange={(e) =>
+                      setCopyForm((p) => ({ ...p, newTahun: parseInt(e.target.value) }))
+                    }
+                    disabled={copyLoading}
+                    className="w-28 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100"
+                  >
+                    {generateYears().map((year) => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Opsi */}
+              <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm font-medium text-gray-700">Opsi Penyalinan</p>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={copyForm.copy_all}
+                    onChange={(e) =>
+                      setCopyForm((p) => ({ ...p, copy_all: e.target.checked }))
+                    }
+                    disabled={copyLoading}
+                    className="mt-0.5 w-4 h-4 text-purple-600 rounded focus:ring-purple-500 disabled:cursor-not-allowed"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">Copy Semua Karyawan</span>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Salin data gaji seluruh karyawan dari bulan referensi
+                    </p>
+                  </div>
+                </label>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={copyForm.adjust_thr}
+                    onChange={(e) =>
+                      setCopyForm((p) => ({ ...p, adjust_thr: e.target.checked }))
+                    }
+                    disabled={copyLoading}
+                    className="mt-0.5 w-4 h-4 text-purple-600 rounded focus:ring-purple-500 disabled:cursor-not-allowed"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">Sesuaikan THR</span>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Otomatis menyesuaikan komponen THR pada bulan baru
+                    </p>
+                  </div>
+                </label>
+              </div>
+
+              {/* Ringkasan */}
+              <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                <p className="text-sm text-purple-700">
+                  <span className="font-medium">Ringkasan:</span> Menyalin data penggajian{" "}
+                  <span className="font-semibold">
+                    {getNamaBulan(copyForm.refBulan)} {copyForm.refTahun}
+                  </span>{" "}
+                  →{" "}
+                  <span className="font-semibold">
+                    {getNamaBulan(copyForm.newBulan)} {copyForm.newTahun}
+                  </span>
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-200">
+              <button
+                onClick={() => setShowCopyModal(false)}
+                disabled={copyLoading}
+                className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:cursor-not-allowed"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleCopyPreviousMonth}
+                disabled={copyLoading}
+                className="flex items-center gap-2 bg-purple-600 text-white px-5 py-2 rounded-lg hover:bg-purple-700 transition-colors disabled:bg-purple-400 disabled:cursor-not-allowed"
+              >
+                {copyLoading ? (
+                  <>
+                    <ClipLoader color="#ffffff" size={18} />
+                    <span>Menyalin...</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy size={18} />
+                    <span>Salin Data</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Modal Kirim Semua Slip Gaji via WhatsApp */}
+      {showBulkWaModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <MessageCircle size={20} className="text-green-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Kirim Semua Slip Gaji
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    Kirim slip gaji ke seluruh karyawan via WhatsApp
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleCloseBulkWaModal}
+                disabled={bulkWaLoading}
+                className="text-gray-400 hover:text-gray-600 disabled:cursor-not-allowed"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 overflow-y-auto flex-1">
+              {!bulkWaResult ? (
+                /* Form pilih bulan/tahun */
+                <div className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Periode Penggajian
+                    </label>
+                    <div className="flex gap-3">
+                      <select
+                        value={bulkWaForm.bulan}
+                        onChange={(e) =>
+                          setBulkWaForm((p) => ({ ...p, bulan: parseInt(e.target.value) }))
+                        }
+                        disabled={bulkWaLoading}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100"
+                      >
+                        {Array.from({ length: 12 }, (_, i) => (
+                          <option key={i + 1} value={i + 1}>
+                            {getNamaBulan(i + 1)}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={bulkWaForm.tahun}
+                        onChange={(e) =>
+                          setBulkWaForm((p) => ({ ...p, tahun: parseInt(e.target.value) }))
+                        }
+                        disabled={bulkWaLoading}
+                        className="w-28 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100"
+                      >
+                        {generateYears().map((year) => (
+                          <option key={year} value={year}>{year}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm text-yellow-700">
+                      <span className="font-medium">Perhatian:</span> Fitur ini akan membuka tab WhatsApp untuk setiap karyawan. Pastikan browser mengizinkan popup dari halaman ini.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                /* Hasil */
+                <div className="space-y-4">
+                  {/* Ringkasan */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-gray-50 rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-gray-900">{bulkWaResult.total}</p>
+                      <p className="text-xs text-gray-500 mt-1">Total</p>
+                    </div>
+                    <div className="bg-green-50 rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-green-600">{bulkWaResult.berhasil_count}</p>
+                      <p className="text-xs text-green-600 mt-1">Berhasil</p>
+                    </div>
+                    <div className="bg-red-50 rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-red-600">{bulkWaResult.gagal_count}</p>
+                      <p className="text-xs text-red-600 mt-1">Gagal</p>
+                    </div>
+                  </div>
+
+                  {/* Periode */}
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-sm text-green-700 font-medium">
+                      Periode: {bulkWaResult.periode}
+                    </p>
+                  </div>
+
+                  {/* Daftar karyawan berhasil */}
+                  {bulkWaResult.berhasil?.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+                        <CheckCircle size={15} className="text-green-500" />
+                        Klik nama karyawan untuk membuka WhatsApp:
+                      </p>
+                      <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        {bulkWaResult.berhasil.map((item) => (
+                          <a
+                            key={item.penggajian_id}
+                            href={item.whatsapp_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-between p-2 bg-gray-50 hover:bg-green-50 border border-transparent hover:border-green-200 rounded-lg text-sm transition-colors group"
+                          >
+                            <div className="flex items-center gap-2">
+                              <Send size={14} className="text-green-500 flex-shrink-0" />
+                              <div>
+                                <span className="font-medium text-gray-800 group-hover:text-green-700">
+                                  {item.nama}
+                                </span>
+                                <span className="text-gray-400 ml-2 text-xs">{item.nomor_induk}</span>
+                              </div>
+                            </div>
+                            <span className="text-gray-500 text-xs">{item.no_wa}</span>
+                          </a>
+                        ))}
+                      </div>
+                      <p className="text-xs text-gray-400 mt-2">
+                        Atau klik tombol di bawah untuk membuka semua sekaligus (izinkan popup di browser)
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Daftar gagal */}
+                  {bulkWaResult.gagal?.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium text-red-600 mb-2 flex items-center gap-1">
+                        <AlertCircle size={15} />
+                        Gagal:
+                      </p>
+                      <div className="space-y-1">
+                        {bulkWaResult.gagal.map((item, i) => (
+                          <div key={i} className="p-2 bg-red-50 rounded-lg text-sm text-red-700">
+                            {item.nama || item.nomor_induk || `ID: ${item.penggajian_id}`}
+                            {item.alasan && <span className="ml-2 text-xs">— {item.alasan}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-200">
+              {!bulkWaResult ? (
+                <>
+                  <button
+                    onClick={handleCloseBulkWaModal}
+                    disabled={bulkWaLoading}
+                    className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:cursor-not-allowed"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={handleBulkSendWhatsApp}
+                    disabled={bulkWaLoading}
+                    className="flex items-center gap-2 bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:bg-green-400 disabled:cursor-not-allowed"
+                  >
+                    {bulkWaLoading ? (
+                      <>
+                        <ClipLoader color="#ffffff" size={18} />
+                        <span>Memproses...</span>
+                      </>
+                    ) : (
+                      <>
+                        <MessageCircle size={18} />
+                        <span>Proses Slip Gaji</span>
+                      </>
+                    )}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={handleCloseBulkWaModal}
+                    className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Tutup
+                  </button>
+                  {bulkWaResult.berhasil?.length > 0 && (
+                    <button
+                      onClick={handleOpenAllWa}
+                      className="flex items-center gap-2 bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      <Send size={18} />
+                      <span>Buka {bulkWaResult.berhasil_count} WhatsApp</span>
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
