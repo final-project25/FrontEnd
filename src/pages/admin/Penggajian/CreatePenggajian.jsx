@@ -42,11 +42,22 @@ const CreatePenggajianPage = () => {
   const getAllKaryawan = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/karyawan");
-      const karyawanData = response.data.data;
-      const activeKaryawan = karyawanData.filter(
-        (k) => k.status_aktif === true,
-      );
+      // Fetch semua halaman sampai habis
+      let allKaryawan = [];
+      let page = 1;
+      let lastPage = 1;
+
+      do {
+        const response = await api.get(`/karyawan?page=${page}`);
+        const data = response.data.data;
+        const meta = response.data.meta;
+
+        allKaryawan = [...allKaryawan, ...data];
+        lastPage = Array.isArray(meta?.last_page) ? meta.last_page[0] : (meta?.last_page ?? 1);
+        page++;
+      } while (page <= lastPage);
+
+      const activeKaryawan = allKaryawan.filter((k) => k.status_aktif === true);
       setKaryawan(activeKaryawan);
     } catch (error) {
       showError("Gagal memuat data karyawan");
@@ -232,7 +243,7 @@ const CreatePenggajianPage = () => {
                 </option>
                 {karyawan.map((k) => (
                   <option key={k.id} value={k.id}>
-                    {k.nama_lengkap} - {k.nama} {k.posisi}
+                    {k.nomor_induk} - {k.nama_lengkap} ({k.posisi})
                   </option>
                 ))}
               </select>
