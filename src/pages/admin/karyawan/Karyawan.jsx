@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ClipLoader } from "react-spinners";
-import { Search, Plus, Edit, Trash2, Eye, Download } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Eye } from "lucide-react";
 import api from "../../../services/api";
 import { useNavigate } from "react-router-dom";
 import { showError, succesError } from "../../../utils/notify";
@@ -9,21 +9,25 @@ const KaryawanPage = () => {
   const [karyawan, setKaryawan] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  // const [exportLoading, setExportLoading] = useState(false);
-  // const [filterStatusAktif, setFilterStatusAktif] = useState("all");
+  const [meta, setMeta] = useState(null);
+  const [links, setLinks] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const navigate = useNavigate();
 
   useEffect(() => {
-    getAllKaryawan();
-  }, []);
+    getAllKaryawan(currentPage);
+  }, [currentPage]);
 
-  const getAllKaryawan = async () => {
+  const getAllKaryawan = async (page = 1) => {
     try {
       setLoading(true);
-      const response = await api.get("/karyawan");
+      const response = await api.get(`/karyawan?page=${page}`);
       setKaryawan(response.data.data);
+      setMeta(response.data.meta);
+      setLinks(response.data.links);
     } catch (error) {
       console.log(error);
+      showError("Gagal memuat data karyawan");
     } finally {
       setLoading(false);
     }
@@ -36,6 +40,15 @@ const KaryawanPage = () => {
       k.nik?.includes(searchTerm) ||
       k.email?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
+
+  // Deduplikasi page numbers, filter hanya label angka
+  const pageNumbers = [
+    ...new Set(
+      meta?.links
+        ?.filter((l) => l.page !== null && !isNaN(Number(l.label)))
+        .map((l) => l.page) || []
+    ),
+  ];
 
   // const handleExportExcel = async () => {
   //   try {
@@ -157,52 +170,7 @@ const KaryawanPage = () => {
             </button>
           </div>
 
-          {/* <div className="border-t border-gray-200 pt-4">
-            <div className="flex flex-col md:flex-row md:items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-700">
-                  Export Excel:
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-600">Status:</label>
-                <select
-                  value={filterStatusAktif}
-                  onChange={(e) => setFilterStatusAktif(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                >
-                  <option value="all">Semua Karyawan</option>
-                  <option value="1">Karyawan Aktif</option>
-                  <option value="0">Karyawan Tidak Aktif</option>
-                </select>
-              </div>
-
-              <button
-                onClick={handleExportExcel}
-                disabled={exportLoading}
-                className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:bg-green-400 disabled:cursor-not-allowed"
-              >
-                {exportLoading ? (
-                  <>
-                    <ClipLoader color="#ffffff" size={16} />
-                    <span>Exporting...</span>
-                  </>
-                ) : (
-                  <>
-                    <Download size={20} />
-                    <span>Export Excel</span>
-                  </>
-                )}
-              </button>
-
-              <span className="text-sm text-gray-500">
-                {filterStatusAktif === "all" && "Export semua data karyawan"}
-                {filterStatusAktif === "1" && "Export karyawan aktif"}
-                {filterStatusAktif === "0" && "Export karyawan tidak aktif"}
-              </span>
-            </div>
-          </div> */}
+          {/* export excel di-comment */}
         </div>
       </div>
 
@@ -260,7 +228,7 @@ const KaryawanPage = () => {
                 {filteredKaryawan.map((k, index) => (
                   <tr key={k.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {index + 1}
+                      {(meta?.current_page - 1) * meta?.per_page + index + 1}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {k.nomor_induk}
@@ -327,9 +295,48 @@ const KaryawanPage = () => {
         )}
       </div>
 
-      {!loading && filteredKaryawan.length > 0 && (
-        <div className="mt-4 text-sm text-gray-600">
-          Menampilkan {filteredKaryawan.length} dari {karyawan.length} karyawan
+      {!loading && (
+        <div className="mt-4 flex items-center justify-between">
+          <p className="text-sm text-gray-600">
+            {meta
+              ? `Menampilkan ${meta.from ?? 0}–${meta.to ?? 0} dari ${meta.total ?? 0} karyawan`
+              : `Menampilkan ${filteredKaryawan.length} karyawan`}
+          </p>
+
+          {pageNumbers.length > 1 && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                disabled={!links?.prev || loading}
+                className="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <div className="flex items-center gap-1">
+                {pageNumbers.map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    disabled={loading}
+                    className={`px-3 py-1 border rounded-lg text-sm ${
+                      page === meta?.current_page
+                        ? "bg-cyan-600 text-white border-cyan-600"
+                        : "border-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(p + 1, meta?.last_page ?? p))}
+                disabled={!links?.next || loading}
+                className="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
