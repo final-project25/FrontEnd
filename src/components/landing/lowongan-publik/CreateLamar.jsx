@@ -117,40 +117,57 @@ const CreateLamaranPage = () => {
   };
 
   // Kompresi gambar via Canvas API — tidak butuh library tambahan
-  const compressImage = (file, maxWidthPx = 1280, quality = 0.8) => {
+  const compressImage = (file, maxWidthPx = 1280, quality = 0.75) => {
     return new Promise((resolve) => {
+      // Jika bukan image yang bisa diproses canvas, kembalikan file asli
+      if (!file.type.startsWith("image/")) {
+        resolve(file);
+        return;
+      }
+
       const reader = new FileReader();
       reader.readAsDataURL(file);
+      reader.onerror = () => resolve(file); // fallback ke file asli
       reader.onload = (e) => {
         const img = new Image();
         img.src = e.target.result;
+        img.onerror = () => resolve(file); // fallback
         img.onload = () => {
-          const canvas = document.createElement("canvas");
-          let { width, height } = img;
+          try {
+            const canvas = document.createElement("canvas");
+            let { width, height } = img;
 
-          // Resize jika lebih besar dari maxWidth
-          if (width > maxWidthPx) {
-            height = Math.round((height * maxWidthPx) / width);
-            width = maxWidthPx;
+            if (width > maxWidthPx) {
+              height = Math.round((height * maxWidthPx) / width);
+              width = maxWidthPx;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) { resolve(file); return; }
+            ctx.drawImage(img, 0, 0, width, height);
+
+            canvas.toBlob(
+              (blob) => {
+                if (!blob || blob.size === 0) {
+                  resolve(file); // fallback jika blob kosong
+                  return;
+                }
+                const ext = file.name.replace(/\.[^.]+$/, "") + ".jpg";
+                const compressedFile = new File([blob], ext, {
+                  type: "image/jpeg",
+                  lastModified: Date.now(),
+                });
+                // Pakai yang lebih kecil antara asli vs hasil kompresi
+                resolve(compressedFile.size < file.size ? compressedFile : file);
+              },
+              "image/jpeg",
+              quality
+            );
+          } catch {
+            resolve(file); // fallback
           }
-
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(img, 0, 0, width, height);
-
-          canvas.toBlob(
-            (blob) => {
-              // Buat File baru dari blob terkompresi
-              const compressedFile = new File([blob], file.name, {
-                type: "image/jpeg",
-                lastModified: Date.now(),
-              });
-              resolve(compressedFile);
-            },
-            "image/jpeg",
-            quality
-          );
         };
       };
     });
@@ -171,20 +188,25 @@ const CreateLamaranPage = () => {
         showError("File harus berupa gambar (JPG, PNG, dll)");
         return;
       }
-      // Kompresi otomatis — file besar dari HP kamera tinggi akan dikecilkan
+
+      // Tolak langsung jika terlalu besar sebelum kompresi (> 15MB)
+      if (file.size > 15 * 1024 * 1024) {
+        showError("File terlalu besar. Gunakan foto maksimal 15MB.");
+        return;
+      }
+
+      // Kompresi otomatis
       let finalFile = file;
       if (file.size > 500 * 1024) {
-        // > 500KB baru dikompres
         try {
           finalFile = await compressImage(file);
         } catch {
-          // Kalau kompresi gagal, pakai file asli
           finalFile = file;
         }
       }
-      // Cek ulang setelah kompresi
+
       if (finalFile.size > 2 * 1024 * 1024) {
-        showError("Ukuran file terlalu besar, maksimal 2MB");
+        showError("Ukuran file terlalu besar setelah kompresi, coba foto dengan resolusi lebih rendah.");
         return;
       }
 
@@ -284,6 +306,14 @@ const CreateLamaranPage = () => {
 
       const response = await api.post("/rekruitmen", submitData, {
         headers: { "Content-Type": "multipart/form-data" },
+        timeout: 120000, // 2 menit — upload 8 file butuh waktu di koneksi lambat
+        onUploadProgress: (progressEvent) => {
+          // Bisa digunakan untuk progress bar jika diperlukan
+          const percent = Math.round(
+            (progressEvent.loaded * 100) / (progressEvent.total || 1)
+          );
+          console.log(`Upload progress: ${percent}%`);
+        },
       });
 
       const kode = response.data.data?.token_pendaftaran;
@@ -315,9 +345,15 @@ const CreateLamaranPage = () => {
       if (error.response?.status === 413) {
         showError("Ukuran file terlalu besar. Pastikan setiap foto maksimal 2MB dan PDF maksimal 5MB.");
       } else if (error.code === "ECONNABORTED" || error.message?.includes("timeout")) {
-        showError("Koneksi timeout. Pastikan internet stabil lalu coba lagi.");
+        showError("Upload timeout. Koneksi internet terlalu lambat, coba lagi atau gunakan WiFi.");
       } else if (!error.response && error.request) {
-        showError("Tidak dapat terhubung ke server. Periksa koneksi internet Anda.");
+        // Log detail untuk debugging
+        console.error("Network error detail:", {
+          message: error.message,
+          code: error.code,
+          config: { url: error.config?.url, timeout: error.config?.timeout },
+        });
+        showError("Gagal mengirim lamaran. Coba lagi — pastikan semua file sudah terupload dengan benar.");
       } else {
         showError(error.response?.data?.message || "Gagal mengirim lamaran. Coba lagi.");
       }
