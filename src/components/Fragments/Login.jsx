@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Button from "../Elements/Button";
 import InputForm from "../Elements/Input";
 import api from "../../services/api";
@@ -15,6 +15,33 @@ const FormLogin = () => {
   const [fieldErrors, setFieldErrors] = useState({ email: "", password: "" });
   const [authError, setAuthError]   = useState("");
   const [loading, setLoading]       = useState(false);
+  const [rateLimitCountdown, setRateLimitCountdown] = useState(0);
+  const countdownRef = useRef(null);
+
+  // Countdown timer untuk rate limit
+  useEffect(() => {
+    if (rateLimitCountdown <= 0) {
+      clearInterval(countdownRef.current);
+      return;
+    }
+    countdownRef.current = setInterval(() => {
+      setRateLimitCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(countdownRef.current);
+          setAuthError("");
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(countdownRef.current);
+  }, [rateLimitCountdown]);
+
+  const formatCountdown = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return m > 0 ? `${m} menit ${s} detik` : `${s} detik`;
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -48,6 +75,7 @@ const FormLogin = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (rateLimitCountdown > 0) return;
     if (!validate()) return;
 
     setLoading(true);
@@ -76,7 +104,11 @@ const FormLogin = () => {
     } catch (error) {
       console.error("Login error:", error);
 
-      if (error.response?.status === 401) {
+      if (error.response?.status === 429) {
+        const retryAfter = error.response.data?.retry_after_seconds || 300;
+        setRateLimitCountdown(retryAfter);
+        setFormData({ email: "", password: "" });
+      } else if (error.response?.status === 401) {
         setAuthError("Email atau password salah");
         setFormData({ email: "", password: "" }); 
       } else if (error.response?.status === 422) {
@@ -103,11 +135,18 @@ const FormLogin = () => {
 
   return (
     <>
-      {authError && (
+      {rateLimitCountdown > 0 ? (
+        <div className="mb-4 p-4 bg-orange-50 border border-orange-300 rounded-lg text-center">
+          <p className="text-orange-600 text-sm">
+            Data yang Anda masukan tidak benar. Coba lagi dalam{" "}
+            <span className="font-bold text-orange-700">{formatCountdown(rateLimitCountdown)}</span>
+          </p>
+        </div>
+      ) : authError ? (
         <div className="mb-4 p-3 bg-red-50 border border-red-300 rounded-lg">
           <p className="text-red-600 text-sm text-center">{authError}</p>
         </div>
-      )}
+      ) : null}
 
       <form onSubmit={handleSubmit} noValidate>
         <InputForm
@@ -119,6 +158,7 @@ const FormLogin = () => {
           autoComplete="username"
           onChange={handleChange}
           error={fieldErrors.email}
+          disabled={rateLimitCountdown > 0}
         />
 
         <InputForm
@@ -130,13 +170,19 @@ const FormLogin = () => {
           autoComplete="current-password"
           onChange={handleChange}
           error={fieldErrors.password}
+          disabled={rateLimitCountdown > 0}
         />
 
-        <Button variant="bg-blue-600 w-full" disabled={loading}>
+        <Button
+          variant="bg-blue-600 w-full"
+          disabled={loading || rateLimitCountdown > 0}
+        >
           {loading ? (
             <div className="flex items-center justify-center gap-2">
               <ClipLoader color="white" loading={true} size={10} />
             </div>
+          ) : rateLimitCountdown > 0 ? (
+            "Login"
           ) : (
             "Login"
           )}
