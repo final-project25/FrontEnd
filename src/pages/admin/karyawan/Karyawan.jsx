@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ClipLoader } from "react-spinners";
-import { Search, Plus, Edit, Trash2, Eye } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Eye, RotateCcw, X } from "lucide-react";
 import api from "../../../services/api";
 import { useNavigate } from "react-router-dom";
 import { showError, succesError } from "../../../utils/notify";
@@ -12,6 +12,10 @@ const KaryawanPage = () => {
   const [meta, setMeta] = useState(null);
   const [links, setLinks] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showRestoreModal, setShowRestoreModal] = useState(false);
+  const [restoreNik, setRestoreNik] = useState("");
+  const [restoreLoading, setRestoreLoading] = useState(false);
+  const [restoreError, setRestoreError] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -114,9 +118,7 @@ const KaryawanPage = () => {
 
     try {
       await api.delete(`/karyawan/${id}`);
-
       setKaryawan((prev) => prev.filter((item) => item.id !== id));
-
       succesError("Data karyawan berhasil dihapus");
     } catch (error) {
       console.log(error);
@@ -124,6 +126,48 @@ const KaryawanPage = () => {
         error.response?.data?.message || "Gagal menghapus data karyawan",
       );
     }
+  };
+
+  const handleRestore = async () => {
+    if (!restoreNik.trim()) {
+      setRestoreError("NIK tidak boleh kosong");
+      return;
+    }
+    if (!/^\d{15,16}$/.test(restoreNik.trim())) {
+      setRestoreError("NIK harus 15-16 digit angka");
+      return;
+    }
+
+    try {
+      setRestoreLoading(true);
+      setRestoreError("");
+      const response = await api.post("/karyawan/restore-by-nik", {
+        nik: restoreNik.trim(),
+      });
+      succesError(
+        response.data?.message || "Data karyawan berhasil dipulihkan"
+      );
+      setShowRestoreModal(false);
+      setRestoreNik("");
+      getAllKaryawan(currentPage);
+    } catch (error) {
+      console.log(error);
+      if (error.response?.status === 404) {
+        setRestoreError("Data karyawan dengan NIK tersebut tidak ditemukan atau belum dihapus.");
+      } else {
+        setRestoreError(
+          error.response?.data?.message || "Gagal memulihkan data karyawan"
+        );
+      }
+    } finally {
+      setRestoreLoading(false);
+    }
+  };
+
+  const handleCloseRestoreModal = () => {
+    setShowRestoreModal(false);
+    setRestoreNik("");
+    setRestoreError("");
   };
 
   const formatPosisi = (posisi) => {
@@ -167,6 +211,13 @@ const KaryawanPage = () => {
             >
               <Plus size={20} />
               <span>Tambah Karyawan</span>
+            </button>
+            <button
+              onClick={() => setShowRestoreModal(true)}
+              className="flex items-center gap-2 bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
+            >
+              <RotateCcw size={20} />
+              <span>Restore Karyawan</span>
             </button>
           </div>
 
@@ -337,6 +388,97 @@ const KaryawanPage = () => {
               </button>
             </div>
           )}
+        </div>
+      )}
+      {/* Modal Restore Karyawan */}
+      {showRestoreModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4">
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <RotateCcw size={20} className="text-orange-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Restore Karyawan
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    Pulihkan data karyawan yang telah dihapus
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleCloseRestoreModal}
+                disabled={restoreLoading}
+                className="text-gray-400 hover:text-gray-600 disabled:cursor-not-allowed"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  NIK Karyawan <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={restoreNik}
+                  onChange={(e) => {
+                    if (!/^\d*$/.test(e.target.value)) return;
+                    setRestoreNik(e.target.value);
+                    setRestoreError("");
+                  }}
+                  placeholder="Masukkan 16 digit NIK karyawan"
+                  maxLength={16}
+                  disabled={restoreLoading}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                    restoreError ? "border-red-500" : "border-gray-300"
+                  }`}
+                />
+                {restoreError && (
+                  <p className="text-red-500 text-sm mt-1">{restoreError}</p>
+                )}
+              </div>
+
+              <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                <p className="text-sm text-orange-700">
+                  <span className="font-medium">Perhatian:</span> Masukkan NIK karyawan yang datanya ingin dipulihkan. Data yang dipulihkan akan kembali aktif di sistem.
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-200">
+              <button
+                onClick={handleCloseRestoreModal}
+                disabled={restoreLoading}
+                className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:cursor-not-allowed"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleRestore}
+                disabled={restoreLoading}
+                className="flex items-center gap-2 bg-orange-500 text-white px-5 py-2 rounded-lg hover:bg-orange-600 transition-colors disabled:bg-orange-300 disabled:cursor-not-allowed"
+              >
+                {restoreLoading ? (
+                  <>
+                    <ClipLoader color="#ffffff" size={18} />
+                    <span>Memulihkan...</span>
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw size={18} />
+                    <span>Restore</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

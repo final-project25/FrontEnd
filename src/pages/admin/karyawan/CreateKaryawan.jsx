@@ -10,6 +10,7 @@ const FieldError = ({ message }) =>
   message ? <p className="text-red-500 text-xs mt-1">{message}</p> : null;
 
 const INITIAL_FORM = {
+  nomor_induk: "",
   nik: "",
   no_rek_bri: "",
   nama_lengkap: "",
@@ -22,6 +23,7 @@ const INITIAL_FORM = {
 };
 
 const INITIAL_ERRORS = {
+  nomor_induk: "",
   nik: "",
   no_rek_bri: "",
   nama_lengkap: "",
@@ -58,6 +60,12 @@ const CreateKaryawanPage = () => {
       isValid = false;
     } else if (formData.nama_lengkap.trim().length < 3) {
       newErrors.nama_lengkap = "Nama lengkap minimal 3 karakter";
+      isValid = false;
+    }
+
+    // Nomor Induk
+    if (!formData.nomor_induk.trim()) {
+      newErrors.nomor_induk = "Nomor induk tidak boleh kosong";
       isValid = false;
     }
 
@@ -196,6 +204,21 @@ const CreateKaryawanPage = () => {
               Data Pribadi
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nomor Induk <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="nomor_induk"
+                  value={formData.nomor_induk}
+                  onChange={handleChange}
+                  placeholder="Masukkan nomor induk karyawan"
+                  className={inputClass("nomor_induk")}
+                />
+                <FieldError message={errors.nomor_induk} />
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Nama Lengkap <span className="text-red-500">*</span>
