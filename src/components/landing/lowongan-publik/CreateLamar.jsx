@@ -116,7 +116,47 @@ const CreateLamaranPage = () => {
     }
   };
 
-  const handleFileChange = (e, fieldName) => {
+  // Kompresi gambar via Canvas API — tidak butuh library tambahan
+  const compressImage = (file, maxWidthPx = 1280, quality = 0.8) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (e) => {
+        const img = new Image();
+        img.src = e.target.result;
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let { width, height } = img;
+
+          // Resize jika lebih besar dari maxWidth
+          if (width > maxWidthPx) {
+            height = Math.round((height * maxWidthPx) / width);
+            width = maxWidthPx;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob(
+            (blob) => {
+              // Buat File baru dari blob terkompresi
+              const compressedFile = new File([blob], file.name, {
+                type: "image/jpeg",
+                lastModified: Date.now(),
+              });
+              resolve(compressedFile);
+            },
+            "image/jpeg",
+            quality
+          );
+        };
+      };
+    });
+  };
+
+  const handleFileChange = async (e, fieldName) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -131,10 +171,32 @@ const CreateLamaranPage = () => {
         showError("File harus berupa gambar (JPG, PNG, dll)");
         return;
       }
-      if (file.size > 2 * 1024 * 1024) {
-        showError("Ukuran file maksimal 2MB");
+      // Kompresi otomatis — file besar dari HP kamera tinggi akan dikecilkan
+      let finalFile = file;
+      if (file.size > 500 * 1024) {
+        // > 500KB baru dikompres
+        try {
+          finalFile = await compressImage(file);
+        } catch {
+          // Kalau kompresi gagal, pakai file asli
+          finalFile = file;
+        }
+      }
+      // Cek ulang setelah kompresi
+      if (finalFile.size > 2 * 1024 * 1024) {
+        showError("Ukuran file terlalu besar, maksimal 2MB");
         return;
       }
+
+      setFiles((prev) => ({ ...prev, [fieldName]: finalFile }));
+      if (errors[fieldName]) setErrors((prev) => ({ ...prev, [fieldName]: "" }));
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviews((prev) => ({ ...prev, [fieldName]: reader.result }));
+      };
+      reader.readAsDataURL(finalFile);
+      return;
     }
 
     if (pdfFields.includes(fieldName)) {
@@ -143,25 +205,13 @@ const CreateLamaranPage = () => {
         return;
       }
       if (file.size > 5 * 1024 * 1024) {
-        showError("Ukuran file maksimal 5MB");
+        showError("Ukuran file PDF maksimal 5MB");
         return;
       }
     }
 
     setFiles((prev) => ({ ...prev, [fieldName]: file }));
-
-    // Clear error file saat sudah diupload
-    if (errors[fieldName]) {
-      setErrors((prev) => ({ ...prev, [fieldName]: "" }));
-    }
-
-    if (imageFields.includes(fieldName)) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviews((prev) => ({ ...prev, [fieldName]: reader.result }));
-      };
-      reader.readAsDataURL(file);
-    }
+    if (errors[fieldName]) setErrors((prev) => ({ ...prev, [fieldName]: "" }));
   };
 
   const removeFile = (fieldName) => {
@@ -262,7 +312,15 @@ const CreateLamaranPage = () => {
         }, 100);
         return;
       }
-      showError(error.response?.data?.message || "Gagal mengirim lamaran");
+      if (error.response?.status === 413) {
+        showError("Ukuran file terlalu besar. Pastikan setiap foto maksimal 2MB dan PDF maksimal 5MB.");
+      } else if (error.code === "ECONNABORTED" || error.message?.includes("timeout")) {
+        showError("Koneksi timeout. Pastikan internet stabil lalu coba lagi.");
+      } else if (!error.response && error.request) {
+        showError("Tidak dapat terhubung ke server. Periksa koneksi internet Anda.");
+      } else {
+        showError(error.response?.data?.message || "Gagal mengirim lamaran. Coba lagi.");
+      }
     } finally {
       setLoading(false);
     }
