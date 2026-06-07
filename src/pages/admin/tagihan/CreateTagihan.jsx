@@ -8,14 +8,14 @@ import { mapBackendErrors } from "../../../utils/errorHandler";
 
 const INITIAL_FORM = {
   karyawan_id: "",
-  jumlah_penghasilan_kotor: "",
+  jumlah_penghasilan_kotor: 3732906,
   jumlah_hari_kerja: "",
-  gaji_harian: "",
+  gaji_harian: 149316,
   tagihan_bulan: "",
   jlh_lembur: "",
   thr: "",
-  seragam_cs_dan_keamanan: "",
-  fee_manajemen: "",
+  seragam_cs_dan_keamanan: 50000,
+  fee_manajemen: 50000,
 };
 
 const INITIAL_ERRORS = {

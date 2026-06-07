@@ -8,9 +8,9 @@ import { mapBackendErrors } from "../../../utils/errorHandler";
 
 const INITIAL_FORM = {
   karyawan_id: "",
-  jumlah_penghasilan_kotor: "",
+  jumlah_penghasilan_kotor: 3732906,
   jumlah_hari_kerja: "",
-  gaji_harian: "",
+  gaji_harian: 149316,
   gajian_bulan: "",
   jumlah_lembur: "",
   uang_thr: "",
@@ -352,7 +352,7 @@ const CreatePenggajianPage = () => {
                   name="jumlah_penghasilan_kotor"
                   value={formData.jumlah_penghasilan_kotor}
                   onChange={handleChange}
-                  placeholder="0"
+                  // placeholder="0"
                   disabled={loading}
                   className={inputClass("jumlah_penghasilan_kotor")}
                 />
