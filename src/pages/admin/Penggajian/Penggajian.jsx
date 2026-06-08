@@ -4,6 +4,7 @@ import api from "../../../services/api";
 import { useNavigate } from "react-router-dom";
 import { ClipLoader } from "react-spinners";
 import { showError, succesError } from "../../../utils/notify";
+import Pagination from "../../../components/Elements/Pagination";
 
 const getNamaBulan = (bulan) => {
   const namaBulan = [
@@ -50,7 +51,6 @@ const PenggajianPage = () => {
   const [filterBulan, setFilterBulan] = useState(new Date().getMonth() + 1);
   const [search, setSearch] = useState("");
   const [meta, setMeta] = useState(null);
-  const [links, setLinks] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
 
   // State untuk copy modal
@@ -76,7 +76,6 @@ const PenggajianPage = () => {
       const response = await api.get(`/penggajian?page=${page}`);
       setPenggajian(response.data.data);
       setMeta(response.data.meta);
-      setLinks(response.data.links);
     } catch (error) {
       console.error(error);
       showError("Gagal memuat data penggajian");
@@ -244,14 +243,6 @@ const PenggajianPage = () => {
   const fromMeta = getValue(meta?.from);
   const toMeta = getValue(meta?.to);
 
-  // Filter hanya nomor halaman (bukan label navigasi "Sebelumnya"/"Berikutnya"), lalu deduplikasi
-  const pageNumbers = [
-    ...new Set(
-      meta?.links
-        ?.filter((l) => l.page !== null && !isNaN(Number(l.label)))
-        .map((l) => l.page) || []
-    ),
-  ];
 
   return (
     <div>
@@ -436,40 +427,12 @@ const PenggajianPage = () => {
             : `Menampilkan ${penggajian.length} data penggajian`}
         </p>
 
-        {pageNumbers.length > 1 && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-              disabled={!links?.prev || loading}
-              className="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Previous
-            </button>
-            <div className="flex items-center gap-1">
-              {pageNumbers.map((page) => (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  disabled={loading}
-                  className={`px-3 py-1 border rounded-lg text-sm ${
-                    page === currentPageMeta
-                      ? "bg-cyan-600 text-white border-cyan-600"
-                      : "border-gray-300 hover:bg-gray-50"
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(p + 1, lastPageMeta ?? p))}
-              disabled={!links?.next || loading}
-              className="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Next
-            </button>
-          </div>
-        )}
+        <Pagination
+          currentPage={currentPageMeta ?? 1}
+          totalPages={lastPageMeta ?? 1}
+          onPageChange={setCurrentPage}
+          disabled={loading}
+        />
       </div>
       {/* Modal Copy Bulan Sebelumnya */}
       {showCopyModal && (

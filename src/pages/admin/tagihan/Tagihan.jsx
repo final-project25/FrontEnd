@@ -4,6 +4,7 @@ import { Edit, Eye, Plus, Search, Trash2, Download, Copy, X } from "lucide-react
 import { ClipLoader } from "react-spinners";
 import { useNavigate } from "react-router-dom";
 import { succesError, showError } from "../../../utils/notify";
+import Pagination from "../../../components/Elements/Pagination";
 
 const POSISI_OPTIONS = [
   { value: "", label: "Semua Posisi" },
@@ -24,7 +25,6 @@ const TagihanPage = () => {
   // State pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [meta, setMeta] = useState(null);
-  const [links, setLinks] = useState(null);
 
   // State filter export
   const [filterBulan, setFilterBulan] = useState(new Date().getMonth() + 1);
@@ -76,7 +76,6 @@ const TagihanPage = () => {
       const response = await api.get(`/tagihan?page=${page}`);
       setTagihan(response.data.data);
       setMeta(response.data.meta);
-      setLinks(response.data.links);
     } catch (error) {
       console.log(error);
     } finally {
@@ -219,14 +218,6 @@ const TagihanPage = () => {
       t.karyawan?.nik?.toLowerCase().includes(q)
     );
   });
-
-  // Generate page numbers dari meta.links
-  const pageNumbers =
-    meta?.links
-      ?.filter(
-        (l) => l.label !== "&laquo; Previous" && l.label !== "Next &raquo;",
-      )
-      ?.map((l) => ({ label: l.label, url: l.url })) || [];
 
   return (
     <div>
@@ -475,52 +466,18 @@ const TagihanPage = () => {
       </div>
 
       {/* Pagination */}
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-4 flex items-center justify-between flex-wrap gap-2">
         <div className="text-sm text-gray-600">
           {meta
-            ? `Menampilkan ${meta.from ?? 0}–${meta.to ?? 0} dari ${meta.total} data tagihan`
-            : `Menampilkan ${tagihan.length} data tagihan`}
+            ? `Menampilkan ${meta.from ?? 0}–${meta.to ?? 0} dari ${meta.total ?? 0} data tagihan`
+            : `Menampilkan ${filteredTagihan.length} data tagihan`}
         </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-            disabled={!links?.prev}
-            className="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Previous
-          </button>
-
-          <div className="flex items-center gap-1">
-            {pageNumbers.map((item, idx) => {
-              const pageNum = parseInt(item.label);
-              if (isNaN(pageNum)) return null;
-              return (
-                <button
-                  key={idx}
-                  onClick={() => setCurrentPage(pageNum)}
-                  className={`px-3 py-1 border rounded-lg text-sm ${
-                    pageNum === meta?.current_page
-                      ? "bg-cyan-600 text-white border-cyan-600"
-                      : "border-gray-300 hover:bg-gray-50"
-                  }`}
-                >
-                  {pageNum}
-                </button>
-              );
-            })}
-          </div>
-
-          <button
-            onClick={() =>
-              setCurrentPage((p) => Math.min(p + 1, meta?.last_page ?? p))
-            }
-            disabled={!links?.next}
-            className="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Next
-          </button>
-        </div>
+        <Pagination
+          currentPage={meta?.current_page ?? currentPage}
+          totalPages={meta?.last_page ?? 1}
+          onPageChange={setCurrentPage}
+          disabled={loading}
+        />
       </div>
       {/* Modal Copy Bulan Sebelumnya */}
       {showCopyModal && (

@@ -9,3 +9,12 @@
   --color-white: #ffffff;
   --color-text: #444444;
 }
+
+/* Sembunyikan scrollbar tapi tetap bisa scroll */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

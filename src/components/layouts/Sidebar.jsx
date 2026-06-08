@@ -6,7 +6,9 @@ import {
   LogOut,
   Banknote,
   Contact,
-  ShieldCheck, 
+  ShieldCheck,
+  Menu,
+  X,
 } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -16,8 +18,10 @@ import { showError, succesError } from "../../utils/notify";
 
 const Sidebar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     const userStr = localStorage.getItem("user");
@@ -30,8 +34,12 @@ const Sidebar = () => {
     }
   }, []);
 
-  // Menu umum untuk semua admin
-  const baseMenuItems = [
+  // Tutup drawer saat navigasi
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [location.pathname]);
+
+  const menuItems = [
     { icon: Home, label: "Dashboard", path: "/dashboard" },
     {
       icon: Users,
@@ -58,10 +66,6 @@ const Sidebar = () => {
       match: ["/rekrutmen", "/create-rekrutmen", "/detail-lowongan", "/update-lowongan", "/daftar-pelamar"],
     },
     { icon: Contact, label: "Kontak", path: "/admin/kontak", match: ["/admin/kontak"] },
-  ];
-
-  const menuItems = [
-    ...baseMenuItems,
     {
       icon: ShieldCheck,
       label: "Kelola Admin",
@@ -100,8 +104,6 @@ const Sidebar = () => {
       : name.substring(0, 2).toUpperCase();
   };
 
-  const location = useLocation();
-
   const isMenuActive = (item) => {
     if (item.match) {
       return item.match.some((p) => location.pathname.startsWith(p));
@@ -109,8 +111,11 @@ const Sidebar = () => {
     return location.pathname === item.path;
   };
 
+  const activeItem = menuItems.find((item) => isMenuActive(item));
+
   return (
     <>
+      {/* ─── DESKTOP SIDEBAR ─── */}
       <aside className="hidden md:flex w-64 h-screen bg-gradient-to-b from-cyan-600 to-cyan-700 text-white flex-col fixed">
         <div className="p-6 border-b border-cyan-500">
           <h1 className="text-xl font-bold">Manajemen SDM</h1>
@@ -126,7 +131,7 @@ const Sidebar = () => {
                   <NavLink
                     to={item.path}
                     className={() =>
-                      `flex items-center gap-3 px-4 py-3 rounded-lg ${
+                      `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                         isMenuActive(item)
                           ? "bg-white text-cyan-700"
                           : "hover:bg-cyan-600"
@@ -156,7 +161,7 @@ const Sidebar = () => {
                 <p className="text-xs text-cyan-100">Admin</p>
               </div>
             </NavLink>
-            <button onClick={handleLogout}>
+            <button onClick={handleLogout} className="hover:opacity-80 transition">
               {isLoggingOut ? (
                 <ClipLoader size={18} color="white" />
               ) : (
@@ -167,25 +172,124 @@ const Sidebar = () => {
         </div>
       </aside>
 
-      {/* Bottom Nav Mobile */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t flex justify-around py-2 md:hidden z-50">
-        {menuItems.slice(0, 5).map((item) => {
-          const Icon = item.icon;
-          return (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={() =>
-                `flex flex-col items-center text-xs ${
-                  isMenuActive(item) ? "text-cyan-600" : "text-gray-500"
-                }`
-              }
-            >
-              <Icon size={22} />
-              <span>{item.label}</span>
-            </NavLink>
-          );
-        })}
+      {/* ─── MOBILE TOP NAVBAR ─── */}
+      <header className="md:hidden fixed top-0 left-0 right-0 z-40 bg-cyan-600 text-white flex items-center justify-between px-4 h-14 shadow-md">
+        {/* Hamburger */}
+        <button
+          onClick={() => setDrawerOpen(true)}
+          className="p-1 rounded-lg hover:bg-cyan-500 transition-colors"
+          aria-label="Buka menu"
+        >
+          <Menu size={24} />
+        </button>
+
+        {/* Judul halaman aktif */}
+        <span className="text-sm font-semibold tracking-wide">
+          {activeItem?.label || "Manajemen SDM"}
+        </span>
+
+        {/* Avatar profil */}
+        <NavLink to="/admin/profil" className="hover:opacity-80 transition">
+          <div className="w-8 h-8 rounded-full bg-white text-cyan-700 flex items-center justify-center font-bold text-xs">
+            {getInitials(user?.name)}
+          </div>
+        </NavLink>
+      </header>
+
+      {/* ─── MOBILE DRAWER OVERLAY ─── */}
+      {drawerOpen && (
+        <div
+          className="md:hidden fixed inset-0 z-50 bg-black/50"
+          onClick={() => setDrawerOpen(false)}
+        />
+      )}
+
+      {/* ─── MOBILE DRAWER SIDEBAR ─── */}
+      <div
+        className={`md:hidden fixed top-0 left-0 h-full w-72 bg-gradient-to-b from-cyan-600 to-cyan-700 text-white z-50 flex flex-col shadow-2xl transition-transform duration-300 ease-in-out ${
+          drawerOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        {/* Drawer header */}
+        <div className="flex items-center justify-between p-5 border-b border-cyan-500">
+          <div>
+            <h1 className="text-lg font-bold">Manajemen SDM</h1>
+            <p className="text-xs text-cyan-100">Admin Panel</p>
+          </div>
+          <button
+            onClick={() => setDrawerOpen(false)}
+            className="p-1 rounded-lg hover:bg-cyan-500 transition-colors"
+            aria-label="Tutup menu"
+          >
+            <X size={22} />
+          </button>
+        </div>
+
+        {/* Profil user di dalam drawer */}
+        <div className="px-5 py-4 border-b border-cyan-500">
+          <NavLink to="/admin/profil" className="flex items-center gap-3 hover:opacity-80 transition">
+            <div className="w-10 h-10 rounded-full bg-white text-cyan-700 flex items-center justify-center font-bold">
+              {getInitials(user?.name)}
+            </div>
+            <div>
+              <p className="text-sm font-medium">{user?.name || "User"}</p>
+              <p className="text-xs text-cyan-100">Admin</p>
+            </div>
+          </NavLink>
+        </div>
+
+        {/* Menu navigasi */}
+        <nav className="flex-1 overflow-y-auto py-4">
+          <ul className="space-y-1 px-3">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              const active = isMenuActive(item);
+              return (
+                <li key={item.path}>
+                  <NavLink
+                    to={item.path}
+                    className={() =>
+                      `flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-sm font-medium ${
+                        active
+                          ? "bg-white text-cyan-700 shadow-sm"
+                          : "hover:bg-cyan-500/60 text-white"
+                      }`
+                    }
+                  >
+                    <div
+                      className={`p-1.5 rounded-lg ${
+                        active ? "bg-cyan-100 text-cyan-700" : "bg-cyan-500/40"
+                      }`}
+                    >
+                      <Icon size={18} />
+                    </div>
+                    {item.label}
+                    {active && (
+                      <div className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-500" />
+                    )}
+                  </NavLink>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+        {/* Logout di bawah drawer */}
+        <div className="p-4 border-t border-cyan-500">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-cyan-500/60 transition-colors text-sm font-medium"
+          >
+            {isLoggingOut ? (
+              <ClipLoader size={18} color="white" />
+            ) : (
+              <div className="p-1.5 rounded-lg bg-cyan-500/40">
+                <LogOut size={18} />
+              </div>
+            )}
+            <span>Logout</span>
+          </button>
+        </div>
       </div>
     </>
   );
