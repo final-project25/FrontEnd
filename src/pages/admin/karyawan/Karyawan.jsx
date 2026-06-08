@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ClipLoader } from "react-spinners";
-import { Search, Plus, Edit, Trash2, Eye, RotateCcw, X } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Eye, RotateCcw, X, Download } from "lucide-react";
 import api from "../../../services/api";
 import { useNavigate } from "react-router-dom";
 import { showError, succesError } from "../../../utils/notify";
@@ -16,6 +16,8 @@ const KaryawanPage = () => {
   const [restoreNik, setRestoreNik] = useState("");
   const [restoreLoading, setRestoreLoading] = useState(false);
   const [restoreError, setRestoreError] = useState("");
+  const [exportLoading, setExportLoading] = useState(false);
+  const [filterStatusAktif, setFilterStatusAktif] = useState("1"); // "1"=aktif, "0"=tidak aktif, ""=semua
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -170,6 +172,46 @@ const KaryawanPage = () => {
     setRestoreError("");
   };
 
+  const handleExportExcel = async () => {
+    try {
+      setExportLoading(true);
+
+      const params = new URLSearchParams();
+      if (filterStatusAktif !== "") {
+        params.append("status_aktif", filterStatusAktif);
+      }
+
+      const response = await api.get(
+        `/karyawan/download-excel?${params.toString()}`,
+        { responseType: "blob" }
+      );
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+
+      const statusLabel =
+        filterStatusAktif === "1" ? "Aktif" :
+        filterStatusAktif === "0" ? "Tidak_Aktif" : "Semua";
+      const fileName = `Data_Karyawan_${statusLabel}_${new Date().toISOString().split("T")[0]}.xlsx`;
+      link.setAttribute("download", fileName);
+
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      succesError(`${fileName} berhasil didownload!`);
+    } catch (error) {
+      console.log(error);
+      showError(
+        error.response?.data?.message || "Gagal mengexport data karyawan"
+      );
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   const formatPosisi = (posisi) => {
     const posisiMap = {
       cleaning_service: "Cleaning Service",
@@ -221,7 +263,46 @@ const KaryawanPage = () => {
             </button>
           </div>
 
-          {/* export excel di-comment */}
+          {/* Export Excel */}
+          <div className="border-t border-gray-200 pt-4">
+            <div className="flex flex-col md:flex-row md:items-center gap-4">
+              <span className="text-sm font-medium text-gray-700">Export Excel:</span>
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-600">Status:</label>
+                <select
+                  value={filterStatusAktif}
+                  onChange={(e) => setFilterStatusAktif(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                >
+                  <option value="">Semua Karyawan</option>
+                  <option value="1">Karyawan Aktif</option>
+                  <option value="0">Karyawan Tidak Aktif</option>
+                </select>
+              </div>
+              <button
+                onClick={handleExportExcel}
+                disabled={exportLoading}
+                className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:bg-green-400 disabled:cursor-not-allowed text-sm"
+              >
+                {exportLoading ? (
+                  <>
+                    <ClipLoader color="#ffffff" size={16} />
+                    <span>Exporting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download size={18} />
+                    <span>Export Excel</span>
+                  </>
+                )}
+              </button>
+              <span className="text-sm text-gray-500">
+                {filterStatusAktif === "" && "Export semua data karyawan"}
+                {filterStatusAktif === "1" && "Export karyawan aktif"}
+                {filterStatusAktif === "0" && "Export karyawan tidak aktif"}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
