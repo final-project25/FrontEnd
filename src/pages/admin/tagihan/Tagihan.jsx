@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import api from "../../../services/api";
-import { Edit, Eye, Plus, Search, Trash2, Download } from "lucide-react";
+import { Edit, Eye, Plus, Search, Trash2, Download, Copy, X } from "lucide-react";
 import { ClipLoader } from "react-spinners";
 import { useNavigate } from "react-router-dom";
 import { succesError, showError } from "../../../utils/notify";
@@ -33,6 +33,19 @@ const TagihanPage = () => {
 
   // State search
   const [search, setSearch] = useState("");
+
+  // State copy modal
+  const currentYear = new Date().getFullYear();
+  const prevMonth = new Date().getMonth() === 0 ? 12 : new Date().getMonth();
+  const prevYear = new Date().getMonth() === 0 ? currentYear - 1 : currentYear;
+  const [showCopyModal, setShowCopyModal] = useState(false);
+  const [copyLoading, setCopyLoading] = useState(false);
+  const [copyForm, setCopyForm] = useState({
+    refBulan: prevMonth,
+    refTahun: prevYear,
+    newBulan: new Date().getMonth() + 1,
+    newTahun: currentYear,
+  });
 
   const getNamaBulan = (bulan) => {
     const namaBulan = [
@@ -141,6 +154,42 @@ const TagihanPage = () => {
     }
   };
 
+  const handleCopyPreviousMonth = async () => {
+    // Format: dd-MM-yyyy sesuai requirement backend
+    const bulan_referensi = `01-${String(copyForm.refBulan).padStart(2, "0")}-${copyForm.refTahun}`;
+    const bulan_tujuan = `01-${String(copyForm.newBulan).padStart(2, "0")}-${copyForm.newTahun}`;
+
+    if (bulan_referensi === bulan_tujuan) {
+      showError("Bulan referensi dan bulan tujuan tidak boleh sama.");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Salin data tagihan dari ${getNamaBulan(copyForm.refBulan)} ${copyForm.refTahun} ke ${getNamaBulan(copyForm.newBulan)} ${copyForm.newTahun}?\n\nProses ini akan membuat data tagihan baru berdasarkan bulan referensi.`
+      )
+    )
+      return;
+
+    try {
+      setCopyLoading(true);
+      await api.post("/tagihan/copy-previous-month", {
+        bulan_referensi,
+        bulan_tujuan,
+      });
+      succesError(
+        `Berhasil menyalin tagihan ${getNamaBulan(copyForm.refBulan)} ${copyForm.refTahun} ke ${getNamaBulan(copyForm.newBulan)} ${copyForm.newTahun}`
+      );
+      setShowCopyModal(false);
+      getAllTagihan(currentPage);
+    } catch (error) {
+      console.error(error);
+      showError(error.response?.data?.message || "Gagal menyalin data tagihan");
+    } finally {
+      setCopyLoading(false);
+    }
+  };
+
   // const formatDate = (dateString) => {
   //   if (!dateString) return "-";
   //   const date = new Date(dateString);
@@ -212,6 +261,13 @@ const TagihanPage = () => {
             >
               <Plus size={20} />
               <span>Tambah Tagihan</span>
+            </button>
+            <button
+              onClick={() => setShowCopyModal(true)}
+              className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              <Copy size={20} />
+              <span>Salin Bulan Lalu</span>
             </button>
           </div>
 
@@ -466,6 +522,160 @@ const TagihanPage = () => {
           </button>
         </div>
       </div>
+      {/* Modal Copy Bulan Sebelumnya */}
+      {showCopyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4">
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Copy size={20} className="text-purple-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Salin Data Tagihan
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    Copy data tagihan dari bulan sebelumnya ke bulan baru
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowCopyModal(false)}
+                disabled={copyLoading}
+                className="text-gray-400 hover:text-gray-600 disabled:cursor-not-allowed"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 space-y-5">
+              {/* Bulan Referensi */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Bulan Referensi (Sumber)
+                </label>
+                <div className="flex gap-3">
+                  <select
+                    value={copyForm.refBulan}
+                    onChange={(e) =>
+                      setCopyForm((p) => ({ ...p, refBulan: parseInt(e.target.value) }))
+                    }
+                    disabled={copyLoading}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100"
+                  >
+                    {Array.from({ length: 12 }, (_, i) => (
+                      <option key={i + 1} value={i + 1}>
+                        {getNamaBulan(i + 1)}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={copyForm.refTahun}
+                    onChange={(e) =>
+                      setCopyForm((p) => ({ ...p, refTahun: parseInt(e.target.value) }))
+                    }
+                    disabled={copyLoading}
+                    className="w-28 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100"
+                  >
+                    {generateYears().map((year) => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Panah */}
+              <div className="flex items-center justify-center">
+                <div className="flex items-center gap-2 text-gray-400 text-sm">
+                  <div className="h-px w-16 bg-gray-200" />
+                  <span>disalin ke</span>
+                  <div className="h-px w-16 bg-gray-200" />
+                </div>
+              </div>
+
+              {/* Bulan Tujuan */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Bulan Tujuan
+                </label>
+                <div className="flex gap-3">
+                  <select
+                    value={copyForm.newBulan}
+                    onChange={(e) =>
+                      setCopyForm((p) => ({ ...p, newBulan: parseInt(e.target.value) }))
+                    }
+                    disabled={copyLoading}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100"
+                  >
+                    {Array.from({ length: 12 }, (_, i) => (
+                      <option key={i + 1} value={i + 1}>
+                        {getNamaBulan(i + 1)}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={copyForm.newTahun}
+                    onChange={(e) =>
+                      setCopyForm((p) => ({ ...p, newTahun: parseInt(e.target.value) }))
+                    }
+                    disabled={copyLoading}
+                    className="w-28 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100"
+                  >
+                    {generateYears().map((year) => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Ringkasan */}
+              <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                <p className="text-sm text-purple-700">
+                  <span className="font-medium">Ringkasan:</span> Menyalin data tagihan{" "}
+                  <span className="font-semibold">
+                    {getNamaBulan(copyForm.refBulan)} {copyForm.refTahun}
+                  </span>{" "}
+                  →{" "}
+                  <span className="font-semibold">
+                    {getNamaBulan(copyForm.newBulan)} {copyForm.newTahun}
+                  </span>
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-200">
+              <button
+                onClick={() => setShowCopyModal(false)}
+                disabled={copyLoading}
+                className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:cursor-not-allowed"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleCopyPreviousMonth}
+                disabled={copyLoading}
+                className="flex items-center gap-2 bg-purple-600 text-white px-5 py-2 rounded-lg hover:bg-purple-700 transition-colors disabled:bg-purple-400 disabled:cursor-not-allowed"
+              >
+                {copyLoading ? (
+                  <>
+                    <ClipLoader color="#ffffff" size={18} />
+                    <span>Menyalin...</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy size={18} />
+                    <span>Salin Data</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
