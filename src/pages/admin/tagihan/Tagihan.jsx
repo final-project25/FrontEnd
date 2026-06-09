@@ -33,7 +33,7 @@ const TagihanPage = () => {
   // State filter export
   const [filterBulan, setFilterBulan] = useState(new Date().getMonth() + 1);
   const [filterTahun, setFilterTahun] = useState(new Date().getFullYear());
-  const [posisiExport, setPosisiExport] = useState("cleaning_service");
+  const [posisiExport, setPosisiExport] = useState("");
 
   // State search
   const [search, setSearch] = useState("");
