@@ -335,6 +335,8 @@ const ProfileAdmin = () => {
       : name.substring(0, 2).toUpperCase();
   };
 
+  const displayName = user?.name || user?.username || user?.nama_lengkap || user?.nama || "Admin";
+
   return (
     <div className="max-w-lg mx-auto space-y-6">
       {/* Info Akun */}
@@ -345,10 +347,10 @@ const ProfileAdmin = () => {
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex items-center gap-4">
         <div className="w-14 h-14 rounded-full bg-cyan-600 text-white flex items-center justify-center text-xl font-bold">
-          {getInitials(user?.name)}
+          {getInitials(displayName)}
         </div>
         <div>
-          <p className="font-semibold text-gray-800">{user?.name || "Admin"}</p>
+          <p className="font-semibold text-gray-800">{displayName}</p>
           <p className="text-sm text-gray-500">{user?.email || "-"}</p>
           <span className="inline-block mt-1 text-xs bg-cyan-100 text-cyan-700 px-2 py-0.5 rounded-full">
             Admin

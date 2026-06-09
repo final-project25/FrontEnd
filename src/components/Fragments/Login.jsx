@@ -88,7 +88,8 @@ const FormLogin = () => {
         password: formData.password,
       });
 
-      const { token, user } = res.data;
+      const { token, data: user } = res.data;
+      // user sekarang = { id, name, email, ... }
 
       if (token) {
         localStorage.setItem("token", token);

@@ -104,6 +104,9 @@ const Sidebar = () => {
       : name.substring(0, 2).toUpperCase();
   };
 
+  // Backend bisa kembalikan name, username, atau nama_lengkap
+  const displayName = user?.name || user?.username || user?.nama_lengkap || user?.nama || "User";
+
   const isMenuActive = (item) => {
     if (item.match) {
       return item.match.some((p) => location.pathname.startsWith(p));
@@ -154,10 +157,10 @@ const Sidebar = () => {
               className="flex items-center gap-3 hover:opacity-80 transition"
             >
               <div className="w-10 h-10 rounded-full bg-white text-cyan-700 flex items-center justify-center font-bold">
-                {getInitials(user?.name)}
+                {getInitials(displayName)}
               </div>
               <div>
-                <p className="text-sm">{user?.name || "User"}</p>
+                <p className="text-sm">{displayName}</p>
                 <p className="text-xs text-cyan-100">Admin</p>
               </div>
             </NavLink>
@@ -191,7 +194,7 @@ const Sidebar = () => {
         {/* Avatar profil */}
         <NavLink to="/admin/profil" className="hover:opacity-80 transition">
           <div className="w-8 h-8 rounded-full bg-white text-cyan-700 flex items-center justify-center font-bold text-xs">
-            {getInitials(user?.name)}
+            {getInitials(displayName)}
           </div>
         </NavLink>
       </header>
@@ -229,10 +232,10 @@ const Sidebar = () => {
         <div className="px-5 py-4 border-b border-cyan-500">
           <NavLink to="/admin/profil" className="flex items-center gap-3 hover:opacity-80 transition">
             <div className="w-10 h-10 rounded-full bg-white text-cyan-700 flex items-center justify-center font-bold">
-              {getInitials(user?.name)}
+              {getInitials(displayName)}
             </div>
             <div>
-              <p className="text-sm font-medium">{user?.name || "User"}</p>
+              <p className="text-sm font-medium">{displayName}</p>
               <p className="text-xs text-cyan-100">Admin</p>
             </div>
           </NavLink>
