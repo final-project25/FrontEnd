@@ -5,20 +5,21 @@ import api from "../../services/api";
 import { succesError } from "../../utils/notify";
 import { ClipLoader } from "react-spinners";
 import { useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 const FormLogin = () => {
   const navigate = useNavigate();
 
-  const [formData, setFormData]     = useState({ email: "", password: "" });
+  const [formData, setFormData] = useState({ email: "", password: "" });
   const [fieldErrors, setFieldErrors] = useState({ email: "", password: "" });
-  const [authError, setAuthError]   = useState("");
-  const [loading, setLoading]       = useState(false);
+  const [authError, setAuthError] = useState("");
+  const [loading, setLoading] = useState(false);
   const [rateLimitCountdown, setRateLimitCountdown] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
   const countdownRef = useRef(null);
 
-  // Countdown timer untuk rate limit
   useEffect(() => {
     if (rateLimitCountdown <= 0) {
       clearInterval(countdownRef.current);
@@ -47,6 +48,7 @@ const FormLogin = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     setFieldErrors((prev) => ({ ...prev, [name]: "" }));
+    setAuthError("");
   };
 
   const validate = () => {
@@ -85,18 +87,15 @@ const FormLogin = () => {
         email: formData.email,
         password: formData.password,
       });
-      console.log("LOGIN RESPONSE:", res.data);
 
       const { token, user } = res.data;
 
       if (token) {
         localStorage.setItem("token", token);
         localStorage.setItem("user", JSON.stringify(user));
-
         setAuthError("");
         succesError(res.data.message || "Login berhasil");
         setFormData({ email: "", password: "" });
-
         setTimeout(() => navigate("/dashboard"), 1000);
       } else {
         setAuthError("Token tidak ditemukan, coba lagi.");
@@ -110,7 +109,7 @@ const FormLogin = () => {
         setFormData({ email: "", password: "" });
       } else if (error.response?.status === 401) {
         setAuthError("Email atau password salah");
-        setFormData({ email: "", password: "" }); 
+        setFormData({ email: "", password: "" });
       } else if (error.response?.status === 422) {
         const errors = error.response.data?.errors;
         if (errors) {
@@ -163,7 +162,7 @@ const FormLogin = () => {
 
         <InputForm
           label="Password"
-          type="password"
+          type={showPassword ? "text" : "password"}
           placeholder="Masukkan password Anda"
           name="password"
           value={formData.password}
@@ -171,18 +170,27 @@ const FormLogin = () => {
           onChange={handleChange}
           error={fieldErrors.password}
           disabled={rateLimitCountdown > 0}
+          rightIcon={
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="text-slate-400 hover:text-slate-600 focus:outline-none"
+              tabIndex={-1}
+            >
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          }
         />
 
         <Button
-          variant="bg-blue-600 w-full"
+          variant="bg-blue-500 hover:bg-blue-600 w-full rounded-full"
           disabled={loading || rateLimitCountdown > 0}
         >
           {loading ? (
             <div className="flex items-center justify-center gap-2">
-              <ClipLoader color="white" loading={true} size={10} />
+              <ClipLoader color="white" size={16} />
+              <span>Login...</span>
             </div>
-          ) : rateLimitCountdown > 0 ? (
-            "Login"
           ) : (
             "Login"
           )}
