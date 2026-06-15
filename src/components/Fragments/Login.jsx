@@ -184,7 +184,7 @@ const FormLogin = () => {
         />
 
         <Button
-          variant="bg-blue-500 hover:bg-blue-600 w-full rounded-full"
+          variant="bg-primary-dark hover:bg-primary w-full rounded-full"
           disabled={loading || rateLimitCountdown > 0}
         >
           {loading ? (

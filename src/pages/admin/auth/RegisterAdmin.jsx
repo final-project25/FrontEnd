@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { UserPlus, Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { UserPlus, Eye, EyeOff } from "lucide-react";
 import api from "../../../services/api";
 import { showError, succesError } from "../../../utils/notify";
+import InputForm from "../../../components/Elements/Input";
+import Button from "../../../components/Elements/Button";
 
 const RegisterAdminPage = () => {
   const [form, setForm] = useState({
@@ -79,11 +81,6 @@ const RegisterAdminPage = () => {
     }
   };
 
-  const inputClass = (field) =>
-    `w-full px-4 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 transition ${
-      errors[field] ? "border-red-400 bg-red-50" : "border-gray-300 bg-white"
-    }`;
-
   return (
     <div className="max-w-lg mx-auto">
       {/* Header */}
@@ -103,135 +100,85 @@ const RegisterAdminPage = () => {
 
       {/* Form Card */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-          {/* Nama */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nama Lengkap <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              placeholder="Contoh: Budi Santoso"
-              className={inputClass("name")}
-            />
-            {errors.name && (
-              <p className="text-xs text-red-500 mt-1">{errors.name}</p>
-            )}
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-1" noValidate>
+          <InputForm
+            label="Nama Lengkap"
+            type="text"
+            name="name"
+            value={form.name}
+            onChange={handleChange}
+            placeholder="Contoh: Budi Santoso"
+            error={errors.name}
+            disabled={isLoading}
+          />
 
-          {/* Email */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              placeholder="admin@perusahaan.com"
-              className={inputClass("email")}
-            />
-            {errors.email && (
-              <p className="text-xs text-red-500 mt-1">{errors.email}</p>
-            )}
-          </div>
+          <InputForm
+            label="Email"
+            type="email"
+            name="email"
+            value={form.email}
+            onChange={handleChange}
+            placeholder="admin@perusahaan.com"
+            autoComplete="username"
+            error={errors.email}
+            disabled={isLoading}
+          />
 
-          {/* Password */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                value={form.password}
-                onChange={handleChange}
-                placeholder="Minimal 8 karakter"
-                className={inputClass("password") + " pr-10"}
-              />
+          <InputForm
+            label="Password"
+            type={showPassword ? "text" : "password"}
+            name="password"
+            value={form.password}
+            onChange={handleChange}
+            placeholder="Minimal 8 karakter"
+            autoComplete="new-password"
+            error={errors.password}
+            disabled={isLoading}
+            rightIcon={
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="text-slate-400 hover:text-slate-600 focus:outline-none"
+                tabIndex={-1}
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
-            </div>
-            {errors.password && (
-              <p className="text-xs text-red-500 mt-1">{errors.password}</p>
-            )}
-          </div>
+            }
+          />
 
-          {/* Konfirmasi Password */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Konfirmasi Password <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <input
-                type={showConfirm ? "text" : "password"}
-                name="password_confirmation"
-                value={form.password_confirmation}
-                onChange={handleChange}
-                placeholder="Ulangi password"
-                className={inputClass("password_confirmation") + " pr-10"}
-              />
+          <InputForm
+            label="Konfirmasi Password"
+            type={showConfirm ? "text" : "password"}
+            name="password_confirmation"
+            value={form.password_confirmation}
+            onChange={handleChange}
+            placeholder="Ulangi password"
+            autoComplete="new-password"
+            error={errors.password_confirmation}
+            disabled={isLoading}
+            rightIcon={
               <button
                 type="button"
                 onClick={() => setShowConfirm((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="text-slate-400 hover:text-slate-600 focus:outline-none"
+                tabIndex={-1}
               >
                 {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
-            </div>
-            {errors.password_confirmation && (
-              <p className="text-xs text-red-500 mt-1">
-                {errors.password_confirmation}
-              </p>
-            )}
-          </div>
+            }
+          />
 
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-cyan-600 hover:bg-cyan-700 disabled:bg-cyan-300 text-white font-semibold py-2.5 rounded-lg transition flex items-center justify-center gap-2"
-          >
-            {isLoading ? (
-              <>
-                <svg
-                  className="animate-spin h-4 w-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8v8z"
-                  />
-                </svg>
-                Menyimpan...
-              </>
-            ) : (
-              <>
+          <div className="pt-2">
+            <Button
+              variant="bg-cyan-600 hover:bg-cyan-700 w-full rounded-lg"
+              disabled={isLoading}
+            >
+              <span className="flex items-center justify-center gap-2">
                 <UserPlus size={16} />
-                Buat Akun Admin
-              </>
-            )}
-          </button>
+                {isLoading ? "Menyimpan..." : "Buat Akun Admin"}
+              </span>
+            </Button>
+          </div>
         </form>
       </div>
     </div>

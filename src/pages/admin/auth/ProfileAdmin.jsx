@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, KeyRound, Trash2, User } from "lucide-react";
+import { Eye, EyeOff, KeyRound, Trash2 } from "lucide-react";
 import api from "../../../services/api";
 import { showError, succesError } from "../../../utils/notify";
+import InputForm from "../../../components/Elements/Input";
+import Button from "../../../components/Elements/Button";
 
 // ─── Ganti Password ───────────────────────────────────────────
 const GantiPasswordForm = () => {
@@ -76,11 +78,6 @@ const GantiPasswordForm = () => {
     }
   };
 
-  const inputClass = (field) =>
-    `w-full px-4 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 transition pr-10 ${
-      errors[field] ? "border-red-400 bg-red-50" : "border-gray-300 bg-white"
-    }`;
-
   const fields = [
     { name: "current_password", label: "Password Saat Ini", key: "current" },
     { name: "new_password", label: "Password Baru", key: "new" },
@@ -103,70 +100,42 @@ const GantiPasswordForm = () => {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+      <form onSubmit={handleSubmit} className="space-y-1" noValidate>
         {fields.map(({ name, label, key }) => (
-          <div key={name}>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {label} <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <input
-                type={show[key] ? "text" : "password"}
-                name={name}
-                value={form[name]}
-                onChange={handleChange}
-                placeholder="••••••••"
-                className={inputClass(name)}
-              />
+          <InputForm
+            key={name}
+            label={label}
+            type={show[key] ? "text" : "password"}
+            name={name}
+            value={form[name]}
+            onChange={handleChange}
+            placeholder="••••••••"
+            error={errors[name]}
+            disabled={isLoading}
+            rightIcon={
               <button
                 type="button"
                 onClick={() => setShow((p) => ({ ...p, [key]: !p[key] }))}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="text-slate-400 hover:text-slate-600 focus:outline-none"
+                tabIndex={-1}
               >
                 {show[key] ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
-            </div>
-            {errors[name] && (
-              <p className="text-xs text-red-500 mt-1">{errors[name]}</p>
-            )}
-          </div>
+            }
+          />
         ))}
 
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full bg-cyan-600 hover:bg-cyan-700 disabled:bg-cyan-300 text-white font-semibold py-2.5 rounded-lg transition flex items-center justify-center gap-2"
-        >
-          {isLoading ? (
-            <>
-              <svg
-                className="animate-spin h-4 w-4"
-                viewBox="0 0 24 24"
-                fill="none"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8v8z"
-                />
-              </svg>
-              Menyimpan...
-            </>
-          ) : (
-            <>
+        <div className="pt-2">
+          <Button
+            variant="bg-cyan-600 hover:bg-cyan-700 w-full rounded-lg"
+            disabled={isLoading}
+          >
+            <span className="flex items-center justify-center gap-2">
               <KeyRound size={16} />
-              Simpan Password
-            </>
-          )}
-        </button>
+              {isLoading ? "Menyimpan..." : "Simpan Password"}
+            </span>
+          </Button>
+        </div>
       </form>
     </div>
   );
@@ -241,74 +210,39 @@ const HapusAkunForm = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Masukkan Password untuk Konfirmasi{" "}
-            <span className="text-red-500">*</span>
-          </label>
-          <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                if (errors.password) setErrors({});
-              }}
-              placeholder="••••••••"
-              className={`w-full px-4 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-red-400 transition pr-10 ${
-                errors.password
-                  ? "border-red-400 bg-red-50"
-                  : "border-gray-300 bg-white"
-              }`}
-            />
+        <InputForm
+          label="Masukkan Password untuk Konfirmasi"
+          type={showPassword ? "text" : "password"}
+          name="password"
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            if (errors.password) setErrors({});
+          }}
+          placeholder="••••••••"
+          error={errors.password}
+          disabled={isLoading}
+          rightIcon={
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="text-slate-400 hover:text-slate-600 focus:outline-none"
+              tabIndex={-1}
             >
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
-          </div>
-          {errors.password && (
-            <p className="text-xs text-red-500 mt-1">{errors.password}</p>
-          )}
-        </div>
+          }
+        />
 
-        <button
-          type="submit"
+        <Button
+          variant="bg-red-500 hover:bg-red-600 w-full rounded-lg"
           disabled={isLoading}
-          className="w-full bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white font-semibold py-2.5 rounded-lg transition flex items-center justify-center gap-2"
         >
-          {isLoading ? (
-            <>
-              <svg
-                className="animate-spin h-4 w-4"
-                viewBox="0 0 24 24"
-                fill="none"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8v8z"
-                />
-              </svg>
-              Menghapus...
-            </>
-          ) : (
-            <>
-              <Trash2 size={16} />
-              Hapus Akun Saya
-            </>
-          )}
-        </button>
+          <span className="flex items-center justify-center gap-2">
+            <Trash2 size={16} />
+            {isLoading ? "Menghapus..." : "Hapus Akun Saya"}
+          </span>
+        </Button>
       </form>
     </div>
   );
