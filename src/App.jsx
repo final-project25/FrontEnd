@@ -32,7 +32,7 @@ import DetailLowonganPublikPage from "./components/landing/lowongan-publik/Detai
 import CreateLamarPage from "./components/landing/lowongan-publik/CreateLamar";
 import DaftarPelamarPage from "./pages/admin/pelamar/Pelamar";
 import LoginPage from "./pages/admin/auth/login";
-import RegisterPage from "./pages/admin/auth/register";
+// import RegisterPage from "./pages/admin/auth/register";
 import KontakForm from "./components/landing/kontak/Kontak";
 import KontakPage from "./pages/admin/kontak/Kontak";
 import DetailKontakPage from "./pages/admin/kontak/DetailKontak";
@@ -59,7 +59,7 @@ function App() {
         <Route path="/" element={<Navigate to="/login" replace />} />
 
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        {/* <Route path="/register" element={<RegisterPage />} /> */}
 
         {/* Dashboard Routes */}
         <Route
