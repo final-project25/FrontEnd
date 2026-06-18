@@ -6,7 +6,6 @@ import {
   User,
   CreditCard,
   Briefcase,
-  DollarSign,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -269,7 +268,6 @@ const DetailPenggajianPage = () => {
                   Jumlah Penghasilan Kotor
                 </label>
                 <div className="flex items-center gap-2">
-                  <DollarSign size={20} className="text-blue-600" />
                   <p className="text-xl font-bold text-blue-600">
                     {formatCurrency(penggajian.jumlah_penghasilan_kotor)}
                   </p>
@@ -355,7 +353,6 @@ const DetailPenggajianPage = () => {
                   Upah Kotor Karyawan
                 </label>
                 <div className="flex items-center gap-2">
-                  <DollarSign size={24} className="text-blue-600" />
                   <p className="text-2xl font-bold text-blue-600">
                     {formatCurrency(penggajian.upah_kotor_karyawan)}
                   </p>
@@ -370,7 +367,6 @@ const DetailPenggajianPage = () => {
                   Upah Diterima (Take Home Pay)
                 </label>
                 <div className="flex items-center gap-2">
-                  <DollarSign size={24} className="text-green-600" />
                   <p className="text-2xl font-bold text-green-600">
                     {formatCurrency(penggajian.upah_diterima)}
                   </p>
