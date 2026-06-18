@@ -1,4 +1,5 @@
 import axios from "axios";
+import { showError } from "../utils/notify";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
@@ -23,6 +24,17 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Jaringan terputus atau server tidak bisa dijangkau sama sekali
+    // error.request ada tapi error.response tidak ada = tidak dapat respons dari server
+    if (!error.response && error.request) {
+      if (error.code === "ECONNABORTED" || error.message?.includes("timeout")) {
+        showError("Koneksi timeout. Periksa jaringan Anda dan coba lagi.");
+      } else {
+        showError("Tidak dapat terhubung ke server. Periksa koneksi internet Anda.");
+      }
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401) {
       const token = localStorage.getItem("token");
       const isLoginRequest = error.config?.url?.includes("/login");

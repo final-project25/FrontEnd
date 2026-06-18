@@ -1,19 +1,10 @@
-import {
-  ArrowLeft,
-  Edit,
-  Trash2,
-  Calendar,
-  Mail,
-  Phone,
-  MapPin,
-  Briefcase,
-  CreditCard,
-  User,
-} from "lucide-react";
+import { ArrowLeft, Edit, Trash2, Calendar, Mail, Phone, MapPin, Briefcase, CreditCard, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import api from "../../../services/api";
 import { useNavigate, useParams } from "react-router-dom";
 import { ClipLoader } from "react-spinners";
+import { showError, succesError } from "../../../utils/notify";
+import ConfirmModal from "../../../components/Elements/ConfirmModal";
 
 // ✅ PINDAH: helper functions ke luar komponen
 const formatDate = (dateString) => {
@@ -51,7 +42,8 @@ const DetailKaryawanPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [karyawan, setKaryawan] = useState({});
-  const [loading, setLoading] = useState(false); // ✅ FIX: aktifkan loading state
+  const [loading, setLoading] = useState(false);
+  const [deleteModal, setDeleteModal] = useState(false);
 
   useEffect(() => {
     getKaryawanById();
@@ -69,12 +61,19 @@ const DetailKaryawanPage = () => {
     }
   };
 
-  // ✅ FIX: handleCancel seharusnya navigate tanpa confirm untuk tombol kembali
   const handleBack = () => navigate("/karyawan");
 
-  const handleDelete = () => {
-    if (window.confirm("Anda yakin ingin menghapus data karyawan ini?")) {
-      // TODO: implementasi delete
+  const handleDelete = () => setDeleteModal(true);
+
+  const handleConfirmDelete = async () => {
+    try {
+      await api.delete(`/karyawan/${id}`);
+      succesError("Data karyawan berhasil dihapus");
+      navigate("/karyawan");
+    } catch (error) {
+      showError(error.response?.data?.message || "Gagal menghapus data karyawan");
+    } finally {
+      setDeleteModal(false);
     }
   };
 
@@ -90,6 +89,14 @@ const DetailKaryawanPage = () => {
 
   return (
     <div>
+      <ConfirmModal
+        isOpen={deleteModal}
+        title="Hapus Karyawan"
+        message="Apakah Anda yakin ingin menghapus data karyawan ini? Data dapat dipulihkan melalui fitur Restore."
+        confirmText="Ya, Hapus"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteModal(false)}
+      />
       {/* Header */}
       <div className="mb-6">
         <button

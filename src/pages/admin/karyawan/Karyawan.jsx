@@ -5,6 +5,7 @@ import api from "../../../services/api";
 import { useNavigate } from "react-router-dom";
 import { showError, succesError } from "../../../utils/notify";
 import Pagination from "../../../components/Elements/Pagination";
+import ConfirmModal from "../../../components/Elements/ConfirmModal";
 
 const KaryawanPage = () => {
   const [karyawan, setKaryawan] = useState([]);
@@ -17,7 +18,8 @@ const KaryawanPage = () => {
   const [restoreLoading, setRestoreLoading] = useState(false);
   const [restoreError, setRestoreError] = useState("");
   const [exportLoading, setExportLoading] = useState(false);
-  const [filterStatusAktif, setFilterStatusAktif] = useState("1"); // "1"=aktif, "0"=tidak aktif, ""=semua
+  const [filterStatusAktif, setFilterStatusAktif] = useState("1");
+  const [confirmModal, setConfirmModal] = useState({ open: false, id: null });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -103,21 +105,18 @@ const KaryawanPage = () => {
   };
 
   const handleDelete = async (id) => {
-    const confirmDelete = window.confirm(
-      "Apakah Anda yakin ingin menghapus karyawan ini?",
-    );
+    setConfirmModal({ open: true, id });
+  };
 
-    if (!confirmDelete) return;
-
+  const handleConfirmDelete = async () => {
     try {
-      await api.delete(`/karyawan/${id}`);
-      setKaryawan((prev) => prev.filter((item) => item.id !== id));
+      await api.delete(`/karyawan/${confirmModal.id}`);
+      setKaryawan((prev) => prev.filter((item) => item.id !== confirmModal.id));
       succesError("Data karyawan berhasil dihapus");
     } catch (error) {
-      console.log(error);
-      showError(
-        error.response?.data?.message || "Gagal menghapus data karyawan",
-      );
+      showError(error.response?.data?.message || "Gagal menghapus data karyawan");
+    } finally {
+      setConfirmModal({ open: false, id: null });
     }
   };
 
@@ -433,6 +432,16 @@ const KaryawanPage = () => {
           />
         </div>
       )}
+      {/* Modal Konfirmasi Hapus */}
+      <ConfirmModal
+        isOpen={confirmModal.open}
+        title="Hapus Karyawan"
+        message="Apakah Anda yakin ingin menghapus karyawan ini? Data yang dihapus dapat dipulihkan melalui fitur Restore."
+        confirmText="Ya, Hapus"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setConfirmModal({ open: false, id: null })}
+      />
+
       {/* Modal Restore Karyawan */}
       {showRestoreModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">

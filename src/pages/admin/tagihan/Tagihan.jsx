@@ -5,6 +5,7 @@ import { ClipLoader } from "react-spinners";
 import { useNavigate } from "react-router-dom";
 import { succesError, showError } from "../../../utils/notify";
 import Pagination from "../../../components/Elements/Pagination";
+import ConfirmModal from "../../../components/Elements/ConfirmModal";
 
 const POSISI_OPTIONS = [
   { value: "", label: "Semua Posisi" },
@@ -44,6 +45,8 @@ const TagihanPage = () => {
   const prevYear = new Date().getMonth() === 0 ? currentYear - 1 : currentYear;
   const [showCopyModal, setShowCopyModal] = useState(false);
   const [copyLoading, setCopyLoading] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({ open: false, id: null });
+  const [copyConfirmModal, setCopyConfirmModal] = useState(false);
   const [copyForm, setCopyForm] = useState({
     refBulan: prevMonth,
     refTahun: prevYear,
@@ -100,16 +103,18 @@ const TagihanPage = () => {
   };
 
   const handleDelete = async (id) => {
-    const confirmDelete = window.confirm("Apakah Anda yakin ingin menghapus tagihan ini?");
-    if (!confirmDelete) return;
+    setConfirmModal({ open: true, id });
+  };
 
+  const handleConfirmDelete = async () => {
     try {
-      await api.delete(`/tagihan/${id}`);
+      await api.delete(`/tagihan/${confirmModal.id}`);
       getAllTagihan(currentPage, filterBulanTabel, filterTahunTabel);
       succesError("Data tagihan berhasil dihapus");
     } catch (error) {
-      console.log(error);
       showError(error.response?.data?.message || "Gagal menghapus data");
+    } finally {
+      setConfirmModal({ open: false, id: null });
     }
   };
 
@@ -159,12 +164,13 @@ const TagihanPage = () => {
       return;
     }
 
-    if (
-      !window.confirm(
-        `Salin data tagihan dari ${getNamaBulan(copyForm.refBulan)} ${copyForm.refTahun} ke ${getNamaBulan(copyForm.newBulan)} ${copyForm.newTahun}?\n\nProses ini akan membuat data tagihan baru berdasarkan bulan referensi.`
-      )
-    ) return;
+    setCopyConfirmModal(true);
+  };
 
+  const handleConfirmCopy = async () => {
+    const bulan_referensi = `01-${String(copyForm.refBulan).padStart(2, "0")}-${copyForm.refTahun}`;
+    const bulan_tujuan = `01-${String(copyForm.newBulan).padStart(2, "0")}-${copyForm.newTahun}`;
+    setCopyConfirmModal(false);
     try {
       setCopyLoading(true);
       await api.post("/tagihan/copy-previous-month", { bulan_referensi, bulan_tujuan });
@@ -174,7 +180,6 @@ const TagihanPage = () => {
       setShowCopyModal(false);
       getAllTagihan(currentPage, filterBulanTabel, filterTahunTabel);
     } catch (error) {
-      console.error(error);
       showError(error.response?.data?.message || "Gagal menyalin data tagihan");
     } finally {
       setCopyLoading(false);
@@ -202,6 +207,23 @@ const TagihanPage = () => {
 
   return (
     <div>
+      <ConfirmModal
+        isOpen={confirmModal.open}
+        title="Hapus Tagihan"
+        message="Apakah Anda yakin ingin menghapus data tagihan ini?"
+        confirmText="Ya, Hapus"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setConfirmModal({ open: false, id: null })}
+      />
+      <ConfirmModal
+        isOpen={copyConfirmModal}
+        variant="info"
+        title="Konfirmasi Salin Tagihan"
+        message={`Salin data tagihan dari ${getNamaBulan(copyForm.refBulan)} ${copyForm.refTahun} ke ${getNamaBulan(copyForm.newBulan)} ${copyForm.newTahun}? Proses ini akan membuat data tagihan baru berdasarkan bulan referensi.`}
+        confirmText="Ya, Salin"
+        onConfirm={handleConfirmCopy}
+        onCancel={() => setCopyConfirmModal(false)}
+      />
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Data Tagihan Perusahaan</h1>
         <p className="text-gray-600 mt-1">Kelola data tagihan perusahaan</p>

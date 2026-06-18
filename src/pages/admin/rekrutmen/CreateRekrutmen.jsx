@@ -5,11 +5,13 @@ import { ClipLoader } from "react-spinners";
 import api from "../../../services/api";
 import { mapBackendErrors } from "../../../utils/errorHandler";
 import { showError, succesError } from "../../../utils/notify";
+import ConfirmModal from "../../../components/Elements/ConfirmModal";
 
 const CreateRekrutmenPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [cancelModal, setCancelModal] = useState(false);
   const [formData, setFormData] = useState({
     posisi: "",
     lokasi_kerja: "",
@@ -60,15 +62,7 @@ const CreateRekrutmenPage = () => {
     }
   };
 
-  const handleCancel = () => {
-    if (
-      window.confirm(
-        "Batalkan pembuatan lowongan? Data yang diisi akan hilang.",
-      )
-    ) {
-      navigate("/rekrutmen");
-    }
-  };
+  const handleCancel = () => setCancelModal(true);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -110,6 +104,15 @@ const CreateRekrutmenPage = () => {
 
   return (
     <div>
+      <ConfirmModal
+        isOpen={cancelModal}
+        variant="warning"
+        title="Batalkan Pengisian?"
+        message="Data yang sudah diisi akan hilang. Yakin ingin kembali?"
+        confirmText="Ya, Batalkan"
+        onConfirm={() => navigate("/rekrutmen")}
+        onCancel={() => setCancelModal(false)}
+      />
       <div className="mb-6">
         <button
           onClick={handleCancel}

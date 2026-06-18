@@ -5,6 +5,7 @@ import { ClipLoader } from "react-spinners";
 import { useNavigate } from "react-router-dom";
 import { showError, succesError } from "../../../utils/notify";
 import { mapBackendErrors } from "../../../utils/errorHandler";
+import ConfirmModal from "../../../components/Elements/ConfirmModal";
 
 const INITIAL_FORM = {
   karyawan_id: "",
@@ -34,6 +35,7 @@ const CreatePenggajianPage = () => {
   const [karyawan, setKaryawan] = useState([]);
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [errors, setErrors] = useState(INITIAL_ERRORS);
+  const [cancelModal, setCancelModal] = useState(false);
 
   useEffect(() => {
     getAllKaryawan();
@@ -181,11 +183,7 @@ const CreatePenggajianPage = () => {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleCancel = () => {
-    if (window.confirm("Anda yakin untuk cancel?")) {
-      navigate("/penggajian");
-    }
-  };
+  const handleCancel = () => setCancelModal(true);
 
   const formatCurrency = (value) => {
     if (!value) return "Rp 0";
@@ -206,6 +204,15 @@ const CreatePenggajianPage = () => {
 
   return (
     <div>
+      <ConfirmModal
+        isOpen={cancelModal}
+        variant="warning"
+        title="Batalkan Pengisian?"
+        message="Data yang sudah diisi akan hilang. Yakin ingin kembali?"
+        confirmText="Ya, Batalkan"
+        onConfirm={() => navigate("/penggajian")}
+        onCancel={() => setCancelModal(false)}
+      />
       <div className="mb-6">
         <button
           onClick={handleCancel}

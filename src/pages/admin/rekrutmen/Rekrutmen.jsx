@@ -1,20 +1,11 @@
-import {
-  Search,
-  Plus,
-  Edit,
-  Trash2,
-  Users,
-  Clock,
-  MapPin,
-  Briefcase,
-  Calendar,
-  Eye,
-} from "lucide-react";
+import { Search, Plus, Edit, Trash2, Users, Clock, MapPin, Briefcase, Calendar, Eye } from "lucide-react";
 import { useEffect, useState } from "react";
 import api from "../../../services/api";
 import { useNavigate } from "react-router-dom";
 import { ClipLoader } from "react-spinners";
 import { showError, succesError } from "../../../utils/notify";
+import Pagination from "../../../components/Elements/Pagination";
+import ConfirmModal from "../../../components/Elements/ConfirmModal";
 
 const RekrutmenPage = () => {
   const navigate = useNavigate();
@@ -22,18 +13,22 @@ const RekrutmenPage = () => {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [meta, setMeta] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [confirmModal, setConfirmModal] = useState({ open: false, id: null, posisi: "" });
+  const [toggleModal, setToggleModal] = useState({ open: false, id: null, currentStatus: "" });
 
   useEffect(() => {
-    getAllRekrutmen();
-  }, []);
+    getAllRekrutmen(currentPage);
+  }, [currentPage]);
 
-  const getAllRekrutmen = async () => {
+  const getAllRekrutmen = async (page = 1) => {
     try {
       setLoading(true);
-      const response = await api.get("/lowongan");
+      const response = await api.get(`/lowongan?page=${page}`);
       setLowongan(response.data.data);
+      setMeta(response.data.meta);
     } catch (error) {
-      console.log(error);
       showError("Gagal memuat Lowongan");
     } finally {
       setLoading(false);
@@ -41,39 +36,32 @@ const RekrutmenPage = () => {
   };
 
   const handleDelete = async (id, posisi) => {
-    const confirmDelete = window.confirm(
-      `Apakah Anda yakin ingin menghapus lowongan ${posisi}?`,
-    );
+    setConfirmModal({ open: true, id, posisi });
+  };
 
-    if (!confirmDelete) return;
-
+  const handleConfirmDelete = async () => {
     try {
-      await api.delete(`/lowongan/${id}`);
-      setLowongan((prev) => prev.filter((item) => item.id !== id));
+      await api.delete(`/lowongan/${confirmModal.id}`);
       succesError("Lowongan berhasil dihapus");
+      getAllRekrutmen(currentPage);
     } catch (error) {
-      console.log(error);
       showError(error.response?.data?.message || "Gagal menghapus lowongan");
+    } finally {
+      setConfirmModal({ open: false, id: null, posisi: "" });
     }
   };
 
-  const handleToggleStatus = async (id, currentStatus) => {
+  const handleToggleStatus = (id, currentStatus) => {
+    setToggleModal({ open: true, id, currentStatus });
+  };
+
+  const handleConfirmToggle = async () => {
+    const { id, currentStatus } = toggleModal;
     const newStatus = currentStatus === "aktif" ? "tidak_aktif" : "aktif";
-    const confirmMessage =
-      currentStatus === "aktif"
-        ? "Nonaktifkan lowongan ini?"
-        : "Aktifkan kembali lowongan ini?";
-
-    if (!window.confirm(confirmMessage)) return;
-
+    setToggleModal({ open: false, id: null, currentStatus: "" });
     try {
       const lowonganToUpdate = lowongan.find((l) => l.id === id);
-
-      if (!lowonganToUpdate) {
-        alert("Data lowongan tidak ditemukan di state");
-        return;
-      }
-
+      if (!lowonganToUpdate) return;
       const updateData = {
         posisi: lowonganToUpdate.posisi,
         lokasi_kerja: lowonganToUpdate.lokasi_kerja,
@@ -83,34 +71,19 @@ const RekrutmenPage = () => {
         deadline_lowongan: lowonganToUpdate.deadline_lowongan,
         status_lowongan: newStatus,
       };
-
-      const response = await api.put(`/lowongan/${id}`, updateData);
-
-      console.log("Update response:", response.data);
-
+      await api.put(`/lowongan/${id}`, updateData);
       setLowongan((prev) =>
-        prev.map((item) =>
-          item.id === id ? { ...item, status_lowongan: newStatus } : item,
-        ),
+        prev.map((item) => item.id === id ? { ...item, status_lowongan: newStatus } : item)
       );
-
-      succesError(
-        `Lowongan berhasil ${newStatus === "aktif" ? "diaktifkan" : "dinonaktifkan"}`,
-      );
+      succesError(`Lowongan berhasil ${newStatus === "aktif" ? "diaktifkan" : "dinonaktifkan"}`);
     } catch (error) {
-      console.error("Error toggle status:", error);
-      console.error("Error response:", error.response?.data);
-
       if (error.response?.status === 404) {
         showError("Lowongan tidak ditemukan. Mungkin sudah dihapus.");
       } else if (error.response?.status === 422) {
         const errors = error.response.data.errors;
-        const errorMessages = Object.values(errors).flat().join(", ");
-        showError(`Validasi gagal: ${errorMessages}`);
+        showError(`Validasi gagal: ${Object.values(errors).flat().join(", ")}`);
       } else {
-        showError(
-          error.response?.data?.message || "Gagal mengubah status lowongan",
-        );
+        showError(error.response?.data?.message || "Gagal mengubah status lowongan");
       }
     }
   };
@@ -129,14 +102,9 @@ const RekrutmenPage = () => {
     return matchSearch && matchStatus;
   });
 
-  const totalLowongan = lowongan.length;
-  const lowonganAktif = lowongan.filter(
-    (l) => l.status_lowongan === "aktif",
-  ).length;
-  const totalPelamar = lowongan.reduce(
-    (sum, l) => sum + (l.jumlah_pelamar || 0),
-    0,
-  );
+  const totalLowongan = meta?.total ?? lowongan.length;
+  const lowonganAktif = lowongan.filter((l) => l.status_lowongan === "aktif").length;
+  const totalPelamar = lowongan.reduce((sum, l) => sum + (l.jumlah_pelamar || 0), 0);
 
   const formatDate = (dateString) => {
     if (!dateString) return "-";
@@ -164,15 +132,27 @@ const RekrutmenPage = () => {
     return diffDays;
   };
 
-  const pagination = {
-    current_page: 1,
-    last_page: 1,
-    total: filteredLowongan.length,
-    per_page: 10,
-  };
-
   return (
     <div>
+      <ConfirmModal
+        isOpen={confirmModal.open}
+        title="Hapus Lowongan"
+        message={`Apakah Anda yakin ingin menghapus lowongan "${confirmModal.posisi}"?`}
+        confirmText="Ya, Hapus"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setConfirmModal({ open: false, id: null, posisi: "" })}
+      />
+      <ConfirmModal
+        isOpen={toggleModal.open}
+        variant="warning"
+        title={toggleModal.currentStatus === "aktif" ? "Nonaktifkan Lowongan?" : "Aktifkan Lowongan?"}
+        message={toggleModal.currentStatus === "aktif"
+          ? "Lowongan akan disembunyikan dari halaman publik."
+          : "Lowongan akan ditampilkan kembali di halaman publik."}
+        confirmText={toggleModal.currentStatus === "aktif" ? "Ya, Nonaktifkan" : "Ya, Aktifkan"}
+        onConfirm={handleConfirmToggle}
+        onCancel={() => setToggleModal({ open: false, id: null, currentStatus: "" })}
+      />
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">
           Manajemen Rekrutmen
@@ -326,7 +306,7 @@ const RekrutmenPage = () => {
                   return (
                     <tr key={l.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {index + 1}
+                        {(meta?.current_page - 1) * meta?.per_page + index + 1}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-start gap-2">
@@ -398,9 +378,7 @@ const RekrutmenPage = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button
-                          onClick={() =>
-                            handleToggleStatus(l.id, l.status_lowongan)
-                          }
+                          onClick={() => handleToggleStatus(l.id, l.status_lowongan)}
                           className={`px-3 py-1 text-xs font-semibold rounded-full transition-colors ${
                             l.status_lowongan === "aktif"
                               ? "bg-green-100 text-green-800 hover:bg-green-200"
@@ -447,33 +425,18 @@ const RekrutmenPage = () => {
         </div>
       </div>
 
-      <div className="mt-4 flex items-center justify-between">
-        <div className="text-sm text-gray-600">
-          Menampilkan 1 - {filteredLowongan.length} dari {pagination.total}{" "}
-          lowongan
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            disabled
-            className="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Previous
-          </button>
-
-          <div className="flex items-center gap-1">
-            <button className="px-3 py-1 border rounded-lg text-sm bg-cyan-600 text-white border-cyan-600">
-              1
-            </button>
-          </div>
-
-          <button
-            disabled
-            className="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Next
-          </button>
-        </div>
+      <div className="mt-4 flex items-center justify-between flex-wrap gap-2">
+        <p className="text-sm text-gray-600">
+          {meta
+            ? `Menampilkan ${meta.from ?? 0}–${meta.to ?? 0} dari ${meta.total ?? 0} lowongan`
+            : `Menampilkan ${filteredLowongan.length} lowongan`}
+        </p>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={meta?.last_page ?? 1}
+          onPageChange={setCurrentPage}
+          disabled={loading}
+        />
       </div>
     </div>
   );

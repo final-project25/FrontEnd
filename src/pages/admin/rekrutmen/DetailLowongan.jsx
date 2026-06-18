@@ -1,27 +1,17 @@
-import {
-  ArrowLeft,
-  Edit,
-  Trash2,
-  Briefcase,
-  MapPin,
-  Calendar,
-  Clock,
-  DollarSign,
-  Users,
-  FileText,
-  AlertCircle,
-} from "lucide-react";
+import { ArrowLeft, Edit, Trash2, Briefcase, MapPin, Calendar, Clock, DollarSign, Users, FileText, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ClipLoader } from "react-spinners";
 import api from "../../../services/api";
-import { showError } from "../../../utils/notify";
+import { showError, succesError } from "../../../utils/notify";
+import ConfirmModal from "../../../components/Elements/ConfirmModal";
 
 const DetailLowonganPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [lowongan, setLowongan] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [deleteModal, setDeleteModal] = useState(false);
 
   useEffect(() => {
     fetchLowongan();
@@ -33,7 +23,6 @@ const DetailLowonganPage = () => {
       const response = await api.get(`/lowongan/${id}`);
       setLowongan(response.data.data);
     } catch (error) {
-      console.log(error);
       showError("Gagal mengambil data lowongan");
       navigate("/rekrutmen");
     } finally {
@@ -41,22 +30,17 @@ const DetailLowonganPage = () => {
     }
   };
 
-  const handleDelete = async () => {
-    if (
-      !window.confirm(
-        `Apakah Anda yakin ingin menghapus lowongan ${lowongan.posisi}?`,
-      )
-    ) {
-      return;
-    }
+  const handleDelete = () => setDeleteModal(true);
 
+  const handleConfirmDelete = async () => {
     try {
       await api.delete(`/lowongan/${id}`);
-      alert("Lowongan berhasil dihapus");
+      succesError("Lowongan berhasil dihapus");
       navigate("/rekrutmen");
     } catch (error) {
-      console.log(error);
-      alert("Gagal menghapus lowongan");
+      showError(error.response?.data?.message || "Gagal menghapus lowongan");
+    } finally {
+      setDeleteModal(false);
     }
   };
 
@@ -131,6 +115,14 @@ const DetailLowonganPage = () => {
 
   return (
     <div>
+      <ConfirmModal
+        isOpen={deleteModal}
+        title="Hapus Lowongan"
+        message={`Apakah Anda yakin ingin menghapus lowongan "${lowongan?.posisi}"? Semua pelamar pada lowongan ini juga akan terdampak.`}
+        confirmText="Ya, Hapus"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteModal(false)}
+      />
       <div className="mb-6">
         <button
           onClick={() => navigate("/rekrutmen")}

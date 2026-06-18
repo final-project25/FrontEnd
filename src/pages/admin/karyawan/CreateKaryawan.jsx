@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { showError, succesError } from "../../../utils/notify";
 import { ClipLoader } from "react-spinners";
 import { mapBackendErrors } from "../../../utils/errorHandler";
+import ConfirmModal from "../../../components/Elements/ConfirmModal";
 
 const FieldError = ({ message }) =>
   message ? <p className="text-red-500 text-xs mt-1">{message}</p> : null;
@@ -42,6 +43,7 @@ const CreateKaryawanPage = () => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [errors, setErrors] = useState(INITIAL_ERRORS);
+  const [cancelModal, setCancelModal] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -166,11 +168,7 @@ const CreateKaryawanPage = () => {
     }
   };
 
-  const handleCancel = () => {
-    if (window.confirm("Anda yakin untuk cancel?")) {
-      navigate("/karyawan");
-    }
-  };
+  const handleCancel = () => setCancelModal(true);
 
   const inputClass = (field) =>
     `w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-colors ${
@@ -179,6 +177,15 @@ const CreateKaryawanPage = () => {
 
   return (
     <div>
+      <ConfirmModal
+        isOpen={cancelModal}
+        variant="warning"
+        title="Batalkan Pengisian?"
+        message="Data yang sudah diisi akan hilang. Yakin ingin kembali?"
+        confirmText="Ya, Batalkan"
+        onConfirm={() => navigate("/karyawan")}
+        onCancel={() => setCancelModal(false)}
+      />
       <div className="mb-6">
         <button
           type="button"

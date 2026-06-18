@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { ClipLoader } from "react-spinners";
 import { showError, succesError } from "../../../utils/notify";
 import Pagination from "../../../components/Elements/Pagination";
+import ConfirmModal from "../../../components/Elements/ConfirmModal";
 
 const getNamaBulan = (bulan) => {
   const namaBulan = [
@@ -39,6 +40,9 @@ const PenggajianPage = () => {
   const [copyLoading, setCopyLoading] = useState(false);
   const [showCopyModal, setShowCopyModal] = useState(false);
   const [slipGajiKaryawan, setSlipGajiKaryawan] = useState({});
+  const [confirmDelete, setConfirmDelete] = useState({ open: false, id: null });
+  const [confirmWa, setConfirmWa] = useState({ open: false, id: null, nama: "" });
+  const [confirmCopy, setConfirmCopy] = useState(false);
 
   // Filter tabel — null = belum dipilih (tampilkan semua)
   const [filterBulanTabel, setFilterBulanTabel] = useState(null);
@@ -99,19 +103,28 @@ const PenggajianPage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Apakah Anda yakin ingin menghapus data penggajian ini?")) return;
+    setConfirmDelete({ open: true, id });
+  };
+
+  const handleConfirmDelete = async () => {
     try {
-      await api.delete(`/penggajian/${id}`);
+      await api.delete(`/penggajian/${confirmDelete.id}`);
       succesError("Data penggajian berhasil dihapus");
       getAllPenggajian(currentPage, filterBulanTabel, filterTahunTabel);
     } catch (error) {
-      console.error(error);
       showError(error.response?.data?.message || "Gagal menghapus data");
+    } finally {
+      setConfirmDelete({ open: false, id: null });
     }
   };
 
-  const handleSendWhatsApp = async (id, namaKaryawan) => {
-    if (!window.confirm(`Kirim slip gaji ke WhatsApp ${namaKaryawan}?`)) return;
+  const handleSendWhatsApp = (id, namaKaryawan) => {
+    setConfirmWa({ open: true, id, nama: namaKaryawan });
+  };
+
+  const handleConfirmSendWa = async () => {
+    const { id, nama } = confirmWa;
+    setConfirmWa({ open: false, id: null, nama: "" });
     try {
       setSlipGajiKaryawan((prev) => ({ ...prev, [id]: true }));
       const response = await api.get(`/penggajian/${id}/send-whatsapp`);
@@ -119,7 +132,6 @@ const PenggajianPage = () => {
       window.open(whatsapp_url, "_blank");
       succesError(`Slip gaji ${karyawan} siap dikirim ke ${no_wa}`);
     } catch (error) {
-      console.error(error);
       showError(error.response?.data?.message || "Gagal generate URL WhatsApp");
     } finally {
       setSlipGajiKaryawan((prev) => {
@@ -130,21 +142,20 @@ const PenggajianPage = () => {
     }
   };
 
-  const handleCopyPreviousMonth = async () => {
+  const handleCopyPreviousMonth = () => {
     const bulan_referensi = `${copyForm.refTahun}-${String(copyForm.refBulan).padStart(2, "0")}-01`;
     const bulan_baru = `${copyForm.newTahun}-${String(copyForm.newBulan).padStart(2, "0")}-01`;
-
     if (bulan_referensi === bulan_baru) {
       showError("Bulan referensi dan bulan baru tidak boleh sama.");
       return;
     }
+    setConfirmCopy(true);
+  };
 
-    if (
-      !window.confirm(
-        `Salin data penggajian dari ${getNamaBulan(copyForm.refBulan)} ${copyForm.refTahun} ke ${getNamaBulan(copyForm.newBulan)} ${copyForm.newTahun}?\n\nProses ini akan membuat data penggajian baru berdasarkan bulan referensi.`
-      )
-    ) return;
-
+  const handleConfirmCopy = async () => {
+    const bulan_referensi = `${copyForm.refTahun}-${String(copyForm.refBulan).padStart(2, "0")}-01`;
+    const bulan_baru = `${copyForm.newTahun}-${String(copyForm.newBulan).padStart(2, "0")}-01`;
+    setConfirmCopy(false);
     try {
       setCopyLoading(true);
       await api.post("/penggajian/copy-previous-month", {
@@ -159,7 +170,6 @@ const PenggajianPage = () => {
       setShowCopyModal(false);
       getAllPenggajian(currentPage, filterBulanTabel, filterTahunTabel);
     } catch (error) {
-      console.error(error);
       showError(error.response?.data?.message || "Gagal menyalin data penggajian");
     } finally {
       setCopyLoading(false);
@@ -212,6 +222,33 @@ const PenggajianPage = () => {
 
   return (
     <div>
+      <ConfirmModal
+        isOpen={confirmDelete.open}
+        title="Hapus Data Penggajian"
+        message="Apakah Anda yakin ingin menghapus data penggajian ini?"
+        confirmText="Ya, Hapus"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setConfirmDelete({ open: false, id: null })}
+      />
+      <ConfirmModal
+        isOpen={confirmWa.open}
+        variant="info"
+        title="Kirim Slip Gaji"
+        message={`Kirim slip gaji via WhatsApp ke ${confirmWa.nama}?`}
+        confirmText="Ya, Kirim"
+        onConfirm={handleConfirmSendWa}
+        onCancel={() => setConfirmWa({ open: false, id: null, nama: "" })}
+      />
+      <ConfirmModal
+        isOpen={confirmCopy}
+        variant="info"
+        title="Salin Data Penggajian"
+        message={`Salin data penggajian dari ${getNamaBulan(copyForm.refBulan)} ${copyForm.refTahun} ke ${getNamaBulan(copyForm.newBulan)} ${copyForm.newTahun}? Proses ini akan membuat data penggajian baru berdasarkan bulan referensi.`}
+        confirmText="Ya, Salin"
+        onConfirm={handleConfirmCopy}
+        onCancel={() => setConfirmCopy(false)}
+      />
+
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Data Penggajian</h1>
         <p className="text-gray-600 mt-1">Kelola data penggajian karyawan perusahaan</p>

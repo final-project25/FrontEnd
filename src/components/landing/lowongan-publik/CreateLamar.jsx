@@ -1,14 +1,4 @@
-import {
-  ArrowLeft,
-  Save,
-  X,
-  FileText,
-  Image,
-  CheckCircle,
-  Copy,
-  Download,
-  Briefcase,
-} from "lucide-react";
+import { ArrowLeft, Save, X, FileText, Image, CheckCircle, Copy, Download, Briefcase } from "lucide-react";
 import { useState, useEffect } from "react";
 import api from "../../../services/api";
 import { useNavigate, useParams } from "react-router-dom";
@@ -16,6 +6,7 @@ import { showError, succesError } from "../../../utils/notify";
 import { ClipLoader } from "react-spinners";
 import Navbar from "../../layouts/Navbar";
 import Footer from "../../layouts/Footer";
+import ConfirmModal from "../../Elements/ConfirmModal";
 
 const INITIAL_ERRORS = {
   nik: "",
@@ -40,6 +31,7 @@ const CreateLamaranPage = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [kodeLamaran, setKodeLamaran] = useState("");
   const [loadingLowongan, setLoadingLowongan] = useState(true);
+  const [cancelModal, setCancelModal] = useState(false);
 
   const [formData, setFormData] = useState({
     lowongan_kerja_id: id || "",
@@ -362,11 +354,7 @@ const CreateLamaranPage = () => {
     }
   };
 
-  const handleCancel = () => {
-    if (window.confirm("Anda yakin untuk membatalkan pengajuan lamaran?")) {
-      navigate("/lowongan-publik");
-    }
-  };
+  const handleCancel = () => setCancelModal(true);
 
   const handleNumberOnly = (e) => {
     const { name, value } = e.target;
@@ -569,6 +557,16 @@ const CreateLamaranPage = () => {
   return (
     <>
       <Navbar />
+
+      <ConfirmModal
+        isOpen={cancelModal}
+        variant="warning"
+        title="Batalkan Lamaran?"
+        message="Data yang sudah diisi akan hilang. Yakin ingin membatalkan pengajuan lamaran?"
+        confirmText="Ya, Batalkan"
+        onConfirm={() => navigate("/lowongan-publik")}
+        onCancel={() => setCancelModal(false)}
+      />
 
       {showSuccessModal && <SuccessModal />}
 

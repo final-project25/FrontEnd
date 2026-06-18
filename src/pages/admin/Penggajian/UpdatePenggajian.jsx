@@ -4,6 +4,7 @@ import api from "../../../services/api";
 import { ClipLoader } from "react-spinners";
 import { useNavigate, useParams } from "react-router-dom";
 import { showError, succesError } from "../../../utils/notify";
+import ConfirmModal from "../../../components/Elements/ConfirmModal";
 
 const INITIAL_FORM = {
   // Field yang dikirim ke backend
@@ -36,6 +37,7 @@ const UpdatePenggajianPage = () => {
   const { id } = useParams();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState(INITIAL_FORM);
+  const [cancelModal, setCancelModal] = useState(false);
 
   useEffect(() => {
     getPenggajianById();
@@ -128,11 +130,7 @@ const UpdatePenggajianPage = () => {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleCancel = () => {
-    if (window.confirm("Anda yakin untuk cancel?")) {
-      navigate("/penggajian");
-    }
-  };
+  const handleCancel = () => setCancelModal(true);
 
   const formatCurrency = (value) => {
     if (!value && value !== 0) return "Rp 0";
@@ -150,6 +148,15 @@ const UpdatePenggajianPage = () => {
 
   return (
     <div>
+      <ConfirmModal
+        isOpen={cancelModal}
+        variant="warning"
+        title="Batalkan Perubahan?"
+        message="Perubahan yang belum disimpan akan hilang. Yakin ingin kembali?"
+        confirmText="Ya, Batalkan"
+        onConfirm={() => navigate("/penggajian")}
+        onCancel={() => setCancelModal(false)}
+      />
       {/* Header */}
       <div className="mb-6">
         <button

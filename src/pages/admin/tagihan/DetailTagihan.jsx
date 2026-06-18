@@ -1,24 +1,17 @@
-import {
-  ArrowLeft,
-  Edit,
-  Trash2,
-  FileText,
-  Calendar,
-  User,
-  CreditCard,
-  Briefcase,
-} from "lucide-react";
+import { ArrowLeft, Edit, Trash2, FileText, Calendar, User, CreditCard, Briefcase } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../../services/api";
 import { ClipLoader } from "react-spinners";
 import { showError, succesError } from "../../../utils/notify";
+import ConfirmModal from "../../../components/Elements/ConfirmModal";
 
 const DetailTagihanPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [loading, setLoading] = useState(false);
   const [tagihan, setTagihan] = useState({});
+  const [deleteModal, setDeleteModal] = useState(false);
 
   useEffect(() => {
     getTagihanById();
@@ -37,19 +30,18 @@ const DetailTagihanPage = () => {
   };
 
   const handleDelete = async () => {
-    if (
-      window.confirm(
-        `Apakah Anda yakin ingin menghapus tagihan ${tagihan.nama}?`,
-      )
-    ) {
-      try {
-        await api.delete(`/tagihan/${id}`);
-        succesError("Tagihan berhasil dihapus");
-        navigate("/tagihan");
-      } catch (error) {
-        console.log(error);
-        showError("Gagal menghapus tagihan");
-      }
+    setDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      await api.delete(`/tagihan/${id}`);
+      succesError("Tagihan berhasil dihapus");
+      navigate("/tagihan");
+    } catch (error) {
+      showError("Gagal menghapus tagihan");
+    } finally {
+      setDeleteModal(false);
     }
   };
 
@@ -101,6 +93,14 @@ const DetailTagihanPage = () => {
 
   return (
     <div>
+      <ConfirmModal
+        isOpen={deleteModal}
+        title="Hapus Tagihan"
+        message={`Apakah Anda yakin ingin menghapus tagihan ini? Tindakan ini tidak dapat dibatalkan.`}
+        confirmText="Ya, Hapus"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteModal(false)}
+      />
       <div className="mb-6">
         <button
           onClick={() => navigate("/tagihan")}

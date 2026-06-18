@@ -3,12 +3,15 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ClipLoader } from "react-spinners";
 import api from "../../../services/api";
+import { showError, succesError } from "../../../utils/notify";
+import ConfirmModal from "../../../components/Elements/ConfirmModal";
 
 const UpdateLowonganPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
+  const [cancelModal, setCancelModal] = useState(false);
   const [formData, setFormData] = useState({
     posisi: "",
     lokasi_kerja: "",
@@ -27,9 +30,6 @@ const UpdateLowonganPage = () => {
     try {
       setLoadingData(true);
       const response = await api.get(`/lowongan/${id}`);
-
-      console.log("Data lowongan:", response.data);
-
       const data = response.data.data;
       setFormData({
         posisi: data.posisi || "",
@@ -41,8 +41,7 @@ const UpdateLowonganPage = () => {
         status_lowongan: data.status_lowongan || "aktif",
       });
     } catch (error) {
-      console.log(error);
-      alert("Gagal mengambil data lowongan");
+      showError("Gagal mengambil data lowongan");
       navigate("/rekrutmen");
     } finally {
       setLoadingData(false);
@@ -57,58 +56,34 @@ const UpdateLowonganPage = () => {
     }));
   };
 
-  const handleCancel = () => {
-    if (window.confirm("Batalkan perubahan? Data yang diubah akan hilang.")) {
-      navigate("/rekrutmen");
-    }
-  };
+  const handleCancel = () => setCancelModal(true);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const requiredFields = [
-      "posisi",
-      "lokasi_kerja",
-      "jenis_kerja",
-      "range_gaji",
-      "deadline_lowongan",
-    ];
-
+    const requiredFields = ["posisi", "lokasi_kerja", "jenis_kerja", "range_gaji", "deadline_lowongan"];
     const emptyFields = requiredFields.filter((field) => !formData[field]);
 
     if (emptyFields.length > 0) {
-      alert("Mohon lengkapi semua field yang bertanda *");
+      showError("Mohon lengkapi semua field yang bertanda *");
       return;
     }
 
     setLoading(true);
 
     try {
-      console.log("Updating lowongan ID:", id);
-      console.log("Update data:", formData);
-
-      const response = await api.put(`/lowongan/${id}`, formData);
-
-      console.log("Response:", response.data);
-
-      alert("Data lowongan berhasil diperbarui");
-
-      setTimeout(() => {
-        navigate("/rekrutmen");
-      }, 1000);
+      await api.put(`/lowongan/${id}`, formData);
+      succesError("Data lowongan berhasil diperbarui");
+      setTimeout(() => navigate("/rekrutmen"), 1000);
     } catch (error) {
-      console.log(error);
-
       if (error.response?.status === 422) {
         const errors = error.response.data.errors;
         const errorMessages = Object.values(errors).flat().join(", ");
-        alert(errorMessages || "Data tidak valid");
+        showError(errorMessages || "Data tidak valid");
       } else if (error.response?.status === 404) {
-        alert("Lowongan tidak ditemukan");
+        showError("Lowongan tidak ditemukan");
       } else {
-        alert(
-          error.response?.data?.message || "Gagal memperbarui data lowongan",
-        );
+        showError(error.response?.data?.message || "Gagal memperbarui data lowongan");
       }
     } finally {
       setLoading(false);
@@ -137,6 +112,15 @@ const UpdateLowonganPage = () => {
 
   return (
     <div>
+      <ConfirmModal
+        isOpen={cancelModal}
+        variant="warning"
+        title="Batalkan Perubahan?"
+        message="Perubahan yang belum disimpan akan hilang. Yakin ingin kembali?"
+        confirmText="Ya, Batalkan"
+        onConfirm={() => navigate("/rekrutmen")}
+        onCancel={() => setCancelModal(false)}
+      />
       <div className="mb-6">
         <button
           onClick={handleCancel}

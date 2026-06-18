@@ -4,13 +4,15 @@ import api from "../../../services/api";
 import { useNavigate } from "react-router-dom";
 import { ClipLoader } from "react-spinners";
 import { showError, succesError } from "../../../utils/notify";
+import ConfirmModal from "../../../components/Elements/ConfirmModal";
 
 const KontakPage = () => {
   const navigate = useNavigate();
   const [kontak, setKontak] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("semua"); 
+  const [filterStatus, setFilterStatus] = useState("semua");
+  const [confirmModal, setConfirmModal] = useState({ open: false, id: null });
   useEffect(() => {
     getAllKontak();
   }, []);
@@ -29,19 +31,18 @@ const KontakPage = () => {
   };
 
   const handleDelete = async (id) => {
-    const confirmDelete = window.confirm(
-      "Apakah Anda yakin ingin menghapus kontak ini?",
-    );
+    setConfirmModal({ open: true, id });
+  };
 
-    if (!confirmDelete) return;
-
+  const handleConfirmDelete = async () => {
     try {
-      await api.delete(`/kontak/${id}`);
-      setKontak((prev) => prev.filter((item) => item.id !== id));
+      await api.delete(`/kontak/${confirmModal.id}`);
+      setKontak((prev) => prev.filter((item) => item.id !== confirmModal.id));
       succesError("Kontak berhasil dihapus");
     } catch (error) {
-      console.log(error);
       showError(error.response?.data?.message || "Gagal menghapus kontak");
+    } finally {
+      setConfirmModal({ open: false, id: null });
     }
   };
 
@@ -93,6 +94,14 @@ const KontakPage = () => {
 
   return (
     <div>
+      <ConfirmModal
+        isOpen={confirmModal.open}
+        title="Hapus Kontak"
+        message="Apakah Anda yakin ingin menghapus pesan kontak ini?"
+        confirmText="Ya, Hapus"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setConfirmModal({ open: false, id: null })}
+      />
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Pesan Kontak</h1>
         <p className="text-gray-600 mt-1">

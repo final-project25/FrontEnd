@@ -15,6 +15,7 @@ import { useState, useEffect } from "react";
 import { ClipLoader } from "react-spinners";
 import api from "../../services/api";
 import { showError, succesError } from "../../utils/notify";
+import ConfirmModal from "../Elements/ConfirmModal";
 
 const Sidebar = () => {
   const navigate = useNavigate();
@@ -22,6 +23,7 @@ const Sidebar = () => {
   const [user, setUser] = useState(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [logoutModal, setLogoutModal] = useState(false);
 
   useEffect(() => {
     const userStr = localStorage.getItem("user");
@@ -75,9 +77,6 @@ const Sidebar = () => {
   ];
 
   const handleLogout = async () => {
-    const confirmLogout = window.confirm("Yakin logout?");
-    if (!confirmLogout) return;
-
     setIsLoggingOut(true);
     try {
       await api.post("/logout");
@@ -86,7 +85,6 @@ const Sidebar = () => {
       succesError("Logout berhasil");
       navigate("/login");
     } catch (error) {
-      console.error("Logout error:", error);
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       showError("Session habis / error logout");
@@ -118,6 +116,17 @@ const Sidebar = () => {
 
   return (
     <>
+      <ConfirmModal
+        isOpen={logoutModal}
+        variant="logout"
+        title="Konfirmasi Logout"
+        message="Yakin ingin keluar dari aplikasi?"
+        confirmText="Ya, Logout"
+        onConfirm={handleLogout}
+        onCancel={() => setLogoutModal(false)}
+        loading={isLoggingOut}
+      />
+
       {/* ─── DESKTOP SIDEBAR ─── */}
       <aside className="hidden md:flex w-64 h-screen bg-gradient-to-b from-cyan-600 to-cyan-700 text-white flex-col fixed">
         <div className="p-6 border-b border-cyan-500">
@@ -164,7 +173,7 @@ const Sidebar = () => {
                 <p className="text-xs text-cyan-100">Admin</p>
               </div>
             </NavLink>
-            <button onClick={handleLogout} className="hover:opacity-80 transition">
+            <button onClick={() => setLogoutModal(true)} className="hover:opacity-80 transition">
               {isLoggingOut ? (
                 <ClipLoader size={18} color="white" />
               ) : (
@@ -280,7 +289,7 @@ const Sidebar = () => {
         {/* Logout di bawah drawer */}
         <div className="p-4 border-t border-cyan-500">
           <button
-            onClick={handleLogout}
+            onClick={() => setLogoutModal(true)}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-cyan-500/60 transition-colors text-sm font-medium"
           >
             {isLoggingOut ? (

@@ -5,6 +5,7 @@ import api from "../../../services/api";
 import { showError, succesError } from "../../../utils/notify";
 import InputForm from "../../../components/Elements/Input";
 import Button from "../../../components/Elements/Button";
+import ConfirmModal from "../../../components/Elements/ConfirmModal";
 
 // ─── Ganti Password ───────────────────────────────────────────
 const GantiPasswordForm = () => {
@@ -148,6 +149,7 @@ const HapusAkunForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [confirmModal, setConfirmModal] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -155,19 +157,16 @@ const HapusAkunForm = () => {
       setErrors({ password: "Password wajib diisi untuk konfirmasi." });
       return;
     }
+    setConfirmModal(true);
+  };
 
-    // Konfirmasi tambahan sebelum hapus
-    const confirm = window.confirm(
-      "Akun kamu akan dihapus permanen beserta semua data terkait. Lanjutkan?",
-    );
-    if (!confirm) return;
-
+  const handleConfirmDelete = async () => {
+    setConfirmModal(false);
     setIsLoading(true);
     try {
       await api.delete("/hapus-akun", {
         data: { password, confirmation: "YA" },
       });
-
       succesError("Akun berhasil dihapus.");
       localStorage.removeItem("token");
       localStorage.removeItem("user");
@@ -190,6 +189,14 @@ const HapusAkunForm = () => {
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-red-100 p-6">
+      <ConfirmModal
+        isOpen={confirmModal}
+        title="Hapus Akun Permanen"
+        message="Akun kamu akan dihapus permanen beserta semua data terkait. Tindakan ini tidak dapat dibatalkan. Yakin ingin melanjutkan?"
+        confirmText="Ya, Hapus Akun"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setConfirmModal(false)}
+      />
       <div className="flex items-center gap-3 mb-2">
         <div className="w-9 h-9 bg-red-100 rounded-lg flex items-center justify-center">
           <Trash2 size={18} className="text-red-500" />
