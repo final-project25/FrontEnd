@@ -32,9 +32,18 @@ api.interceptors.response.use(
       if (token && !isLoginRequest) {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
-        window.location.href = "/login";
+        window.location.href = "/login?session=expired";
       }
     }
+
+    if (error.response?.status === 403) {
+      window.location.href = "/unauthorized";
+    }
+
+    if (error.response?.status >= 500) {
+      window.location.href = "/server-error";
+    }
+
     return Promise.reject(error);
   },
 );

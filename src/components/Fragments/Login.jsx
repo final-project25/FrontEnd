@@ -4,13 +4,14 @@ import InputForm from "../Elements/Input";
 import api from "../../services/api";
 import { succesError } from "../../utils/notify";
 import { ClipLoader } from "react-spinners";
-import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Eye, EyeOff, AlertCircle } from "lucide-react";
 
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 const FormLogin = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [fieldErrors, setFieldErrors] = useState({ email: "", password: "" });
@@ -19,6 +20,9 @@ const FormLogin = () => {
   const [rateLimitCountdown, setRateLimitCountdown] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const countdownRef = useRef(null);
+
+  // Deteksi session expired dari query param
+  const isSessionExpired = new URLSearchParams(location.search).get("session") === "expired";
 
   useEffect(() => {
     if (rateLimitCountdown <= 0) {
@@ -135,6 +139,16 @@ const FormLogin = () => {
 
   return (
     <>
+      {/* Notifikasi session expired */}
+      {isSessionExpired && (
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-300 rounded-lg flex items-start gap-2">
+          <AlertCircle size={16} className="text-yellow-600 mt-0.5 shrink-0" />
+          <p className="text-yellow-700 text-sm">
+            Sesi Anda telah berakhir. Silakan login kembali.
+          </p>
+        </div>
+      )}
+
       {rateLimitCountdown > 0 ? (
         <div className="mb-4 p-4 bg-orange-50 border border-orange-300 rounded-lg text-center">
           <p className="text-orange-600 text-sm">

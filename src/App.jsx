@@ -38,6 +38,9 @@ import KontakPage from "./pages/admin/kontak/Kontak";
 import DetailKontakPage from "./pages/admin/kontak/DetailKontak";
 import RegisterAdminPage from "./pages/admin/auth/RegisterAdmin";
 import ProfileAdmin from "./pages/admin/auth/ProfileAdmin";
+import NotFoundPage from "./pages/NotFound";
+import UnauthorizedPage from "./pages/Unauthorized";
+import ServerErrorPage from "./pages/ServerError";
 
 function App() {
   return (
@@ -114,6 +117,13 @@ function App() {
           {/* Profil Admin */}
           <Route path="/admin/profil" element={<ProfileAdmin />} />
         </Route>
+
+        {/* Halaman Error */}
+        <Route path="/unauthorized" element={<UnauthorizedPage />} />
+        <Route path="/server-error" element={<ServerErrorPage />} />
+
+        {/* 404 — harus paling bawah */}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Router>
   );
