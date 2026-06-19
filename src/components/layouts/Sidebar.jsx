@@ -47,27 +47,53 @@ const Sidebar = () => {
       icon: Users,
       label: "Karyawan",
       path: "/karyawan",
-      match: ["/karyawan", "/create-karyawan", "/update-karyawan", "/detail-karyawan"],
+      match: [
+        "/karyawan",
+        "/create-karyawan",
+        "/update-karyawan",
+        "/detail-karyawan",
+      ],
     },
     {
       icon: Banknote,
       label: "Tagihan",
       path: "/tagihan",
-      match: ["/tagihan", "/create-tagihan", "/detail-tagihan", "/update-tagihan"],
+      match: [
+        "/tagihan",
+        "/create-tagihan",
+        "/detail-tagihan",
+        "/update-tagihan",
+      ],
     },
     {
       icon: DollarSign,
       label: "Penggajian",
       path: "/penggajian",
-      match: ["/penggajian", "/create-penggajian", "/update-penggajian", "/detail-penggajian"],
+      match: [
+        "/penggajian",
+        "/create-penggajian",
+        "/update-penggajian",
+        "/detail-penggajian",
+      ],
     },
     {
       icon: UserPlus,
       label: "Rekrutmen",
       path: "/rekrutmen",
-      match: ["/rekrutmen", "/create-rekrutmen", "/detail-lowongan", "/update-lowongan", "/daftar-pelamar"],
+      match: [
+        "/rekrutmen",
+        "/create-rekrutmen",
+        "/detail-lowongan",
+        "/update-lowongan",
+        "/daftar-pelamar",
+      ],
     },
-    { icon: Contact, label: "Kontak", path: "/admin/kontak", match: ["/admin/kontak"] },
+    {
+      icon: Contact,
+      label: "Kontak",
+      path: "/admin/kontak",
+      match: ["/admin/kontak"],
+    },
     {
       icon: ShieldCheck,
       label: "Kelola Admin",
@@ -85,6 +111,7 @@ const Sidebar = () => {
       succesError("Logout berhasil");
       navigate("/login");
     } catch (error) {
+      console.error("Logout error:", error);
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       showError("Session habis / error logout");
@@ -103,7 +130,8 @@ const Sidebar = () => {
   };
 
   // Backend bisa kembalikan name, username, atau nama_lengkap
-  const displayName = user?.name || user?.username || user?.nama_lengkap || user?.nama || "User";
+  const displayName =
+    user?.name || user?.username || user?.nama_lengkap || user?.nama || "User";
 
   const isMenuActive = (item) => {
     if (item.match) {
@@ -173,7 +201,10 @@ const Sidebar = () => {
                 <p className="text-xs text-cyan-100">Admin</p>
               </div>
             </NavLink>
-            <button onClick={() => setLogoutModal(true)} className="hover:opacity-80 transition">
+            <button
+              onClick={() => setLogoutModal(true)}
+              className="hover:opacity-80 transition"
+            >
               {isLoggingOut ? (
                 <ClipLoader size={18} color="white" />
               ) : (
@@ -239,7 +270,10 @@ const Sidebar = () => {
 
         {/* Profil user di dalam drawer */}
         <div className="px-5 py-4 border-b border-cyan-500">
-          <NavLink to="/admin/profil" className="flex items-center gap-3 hover:opacity-80 transition">
+          <NavLink
+            to="/admin/profil"
+            className="flex items-center gap-3 hover:opacity-80 transition"
+          >
             <div className="w-10 h-10 rounded-full bg-white text-cyan-700 flex items-center justify-center font-bold">
               {getInitials(displayName)}
             </div>
