@@ -516,6 +516,12 @@ const DaftarPelamarPage = () => {
                     </p>
                   </div>
                   <div>
+                    <p className="text-sm text-gray-600">Email</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {selectedPelamar.email ?? "-"}
+                    </p>
+                  </div>
+                  <div>
                     <p className="text-sm text-gray-600">No. WhatsApp</p>
                     <p className="text-sm font-medium text-gray-900">
                       {selectedPelamar.no_wa ?? "-"}
