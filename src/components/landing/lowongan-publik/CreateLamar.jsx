@@ -1,4 +1,14 @@
-import { ArrowLeft, Save, X, FileText, Image, CheckCircle, Copy, Download, Briefcase } from "lucide-react";
+import {
+  ArrowLeft,
+  Save,
+  X,
+  FileText,
+  Image,
+  CheckCircle,
+  Copy,
+  Download,
+  Briefcase,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import api from "../../../services/api";
 import { useNavigate, useParams } from "react-router-dom";
@@ -11,6 +21,7 @@ import ConfirmModal from "../../Elements/ConfirmModal";
 const INITIAL_ERRORS = {
   nik: "",
   nama_lengkap: "",
+  email: "",
   no_wa: "",
   posisi_dilamar: "",
   alamat: "",
@@ -38,6 +49,7 @@ const CreateLamaranPage = () => {
     nik: "",
     nama: "",
     nama_lengkap: "",
+    email: "",
     posisi_dilamar: "",
     no_wa: "",
     alamat: "",
@@ -102,16 +114,13 @@ const CreateLamaranPage = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear error saat user mulai mengetik
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
-  // Kompresi gambar via Canvas API — tidak butuh library tambahan
   const compressImage = (file, maxWidthPx = 1280, quality = 0.75) => {
     return new Promise((resolve) => {
-      // Jika bukan image yang bisa diproses canvas, kembalikan file asli
       if (!file.type.startsWith("image/")) {
         resolve(file);
         return;
@@ -119,11 +128,11 @@ const CreateLamaranPage = () => {
 
       const reader = new FileReader();
       reader.readAsDataURL(file);
-      reader.onerror = () => resolve(file); // fallback ke file asli
+      reader.onerror = () => resolve(file);
       reader.onload = (e) => {
         const img = new Image();
         img.src = e.target.result;
-        img.onerror = () => resolve(file); // fallback
+        img.onerror = () => resolve(file);
         img.onload = () => {
           try {
             const canvas = document.createElement("canvas");
@@ -137,13 +146,16 @@ const CreateLamaranPage = () => {
             canvas.width = width;
             canvas.height = height;
             const ctx = canvas.getContext("2d");
-            if (!ctx) { resolve(file); return; }
+            if (!ctx) {
+              resolve(file);
+              return;
+            }
             ctx.drawImage(img, 0, 0, width, height);
 
             canvas.toBlob(
               (blob) => {
                 if (!blob || blob.size === 0) {
-                  resolve(file); // fallback jika blob kosong
+                  resolve(file);
                   return;
                 }
                 const ext = file.name.replace(/\.[^.]+$/, "") + ".jpg";
@@ -151,14 +163,15 @@ const CreateLamaranPage = () => {
                   type: "image/jpeg",
                   lastModified: Date.now(),
                 });
-                // Pakai yang lebih kecil antara asli vs hasil kompresi
-                resolve(compressedFile.size < file.size ? compressedFile : file);
+                resolve(
+                  compressedFile.size < file.size ? compressedFile : file,
+                );
               },
               "image/jpeg",
-              quality
+              quality,
             );
           } catch {
-            resolve(file); // fallback
+            resolve(file);
           }
         };
       };
@@ -170,8 +183,12 @@ const CreateLamaranPage = () => {
     if (!file) return;
 
     const imageFields = [
-      "foto_ktp", "foto_kk", "foto_skck",
-      "pas_foto", "surat_sehat", "surat_anti_narkoba",
+      "foto_ktp",
+      "foto_kk",
+      "foto_skck",
+      "pas_foto",
+      "surat_sehat",
+      "surat_anti_narkoba",
     ];
     const pdfFields = ["surat_lamaran", "cv"];
 
@@ -181,13 +198,11 @@ const CreateLamaranPage = () => {
         return;
       }
 
-      // Tolak langsung jika terlalu besar sebelum kompresi (> 15MB)
       if (file.size > 15 * 1024 * 1024) {
         showError("File terlalu besar. Gunakan foto maksimal 15MB.");
         return;
       }
 
-      // Kompresi otomatis
       let finalFile = file;
       if (file.size > 500 * 1024) {
         try {
@@ -198,12 +213,15 @@ const CreateLamaranPage = () => {
       }
 
       if (finalFile.size > 2 * 1024 * 1024) {
-        showError("Ukuran file terlalu besar setelah kompresi, coba foto dengan resolusi lebih rendah.");
+        showError(
+          "Ukuran file terlalu besar setelah kompresi, coba foto dengan resolusi lebih rendah.",
+        );
         return;
       }
 
       setFiles((prev) => ({ ...prev, [fieldName]: finalFile }));
-      if (errors[fieldName]) setErrors((prev) => ({ ...prev, [fieldName]: "" }));
+      if (errors[fieldName])
+        setErrors((prev) => ({ ...prev, [fieldName]: "" }));
 
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -246,6 +264,12 @@ const CreateLamaranPage = () => {
       newErrors.nama_lengkap = "Nama lengkap wajib diisi";
     }
 
+    if (!formData.email.trim()) {
+      newErrors.email = "Email wajib diisi";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "Format email tidak valid";
+    }
+
     if (!formData.no_wa.trim()) {
       newErrors.no_wa = "Nomor WhatsApp wajib diisi";
     } else if (!/^(\+62|62|0)[0-9]{9,13}$/.test(formData.no_wa)) {
@@ -256,10 +280,15 @@ const CreateLamaranPage = () => {
       newErrors.alamat = "Alamat wajib diisi";
     }
 
-    // Validasi semua file wajib
     const requiredFiles = [
-      "foto_ktp", "foto_kk", "foto_skck", "pas_foto",
-      "surat_sehat", "surat_anti_narkoba", "surat_lamaran", "cv",
+      "foto_ktp",
+      "foto_kk",
+      "foto_skck",
+      "pas_foto",
+      "surat_sehat",
+      "surat_anti_narkoba",
+      "surat_lamaran",
+      "cv",
     ];
     requiredFiles.forEach((field) => {
       if (!files[field]) {
@@ -275,7 +304,6 @@ const CreateLamaranPage = () => {
     e.preventDefault();
 
     if (!validate()) {
-      // Scroll ke error pertama
       const firstError = document.querySelector(".text-red-500");
       if (firstError) {
         firstError.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -298,11 +326,10 @@ const CreateLamaranPage = () => {
 
       const response = await api.post("/rekruitmen", submitData, {
         headers: { "Content-Type": "multipart/form-data" },
-        timeout: 120000, // 2 menit — upload 8 file butuh waktu di koneksi lambat
+        timeout: 120000,
         onUploadProgress: (progressEvent) => {
-          // Bisa digunakan untuk progress bar jika diperlukan
           const percent = Math.round(
-            (progressEvent.loaded * 100) / (progressEvent.total || 1)
+            (progressEvent.loaded * 100) / (progressEvent.total || 1),
           );
           console.log(`Upload progress: ${percent}%`);
         },
@@ -325,7 +352,6 @@ const CreateLamaranPage = () => {
         });
         setErrors((prev) => ({ ...prev, ...mappedErrors }));
 
-        // Scroll ke error pertama dari backend
         setTimeout(() => {
           const firstError = document.querySelector(".text-red-500");
           if (firstError) {
@@ -335,19 +361,29 @@ const CreateLamaranPage = () => {
         return;
       }
       if (error.response?.status === 413) {
-        showError("Ukuran file terlalu besar. Pastikan setiap foto maksimal 2MB dan PDF maksimal 5MB.");
-      } else if (error.code === "ECONNABORTED" || error.message?.includes("timeout")) {
-        showError("Upload timeout. Koneksi internet terlalu lambat, coba lagi atau gunakan WiFi.");
+        showError(
+          "Ukuran file terlalu besar. Pastikan setiap foto maksimal 2MB dan PDF maksimal 5MB.",
+        );
+      } else if (
+        error.code === "ECONNABORTED" ||
+        error.message?.includes("timeout")
+      ) {
+        showError(
+          "Upload timeout. Koneksi internet terlalu lambat, coba lagi atau gunakan WiFi.",
+        );
       } else if (!error.response && error.request) {
-        // Log detail untuk debugging
         console.error("Network error detail:", {
           message: error.message,
           code: error.code,
           config: { url: error.config?.url, timeout: error.config?.timeout },
         });
-        showError("Gagal mengirim lamaran. Coba lagi — pastikan semua file sudah terupload dengan benar.");
+        showError(
+          "Gagal mengirim lamaran. Coba lagi — pastikan semua file sudah terupload dengan benar.",
+        );
       } else {
-        showError(error.response?.data?.message || "Gagal mengirim lamaran. Coba lagi.");
+        showError(
+          error.response?.data?.message || "Gagal mengirim lamaran. Coba lagi.",
+        );
       }
     } finally {
       setLoading(false);
@@ -378,7 +414,7 @@ const CreateLamaranPage = () => {
           `Akses: ${window.location.origin}/cek-status-lamaran\n\n` +
           `Terima kasih telah melamar!`,
       ],
-      { type: "text/plain" }
+      { type: "text/plain" },
     );
     element.href = URL.createObjectURL(file);
     element.download = `Kode_Lamaran_${kodeLamaran}.txt`;
@@ -388,7 +424,6 @@ const CreateLamaranPage = () => {
     succesError("Kode berhasil didownload!");
   };
 
-  // Helper komponen
   const FieldError = ({ message }) =>
     message ? <p className="text-red-500 text-xs mt-1">{message}</p> : null;
 
@@ -397,11 +432,20 @@ const CreateLamaranPage = () => {
       errors[field] ? "border-red-500 bg-red-50" : "border-gray-300"
     }`;
 
-  // FileUploadBox menerima errors sebagai prop agar bisa tampil border merah
-  const FileUploadBox = ({ label, name, accept, fileType, required = true }) => {
+  const FileUploadBox = ({
+    label,
+    name,
+    accept,
+    fileType,
+    required = true,
+  }) => {
     const isImage = [
-      "foto_ktp", "foto_kk", "foto_skck",
-      "pas_foto", "surat_sehat", "surat_anti_narkoba",
+      "foto_ktp",
+      "foto_kk",
+      "foto_skck",
+      "pas_foto",
+      "surat_sehat",
+      "surat_anti_narkoba",
     ].includes(name);
 
     const hasError = !!errors[name];
@@ -422,15 +466,21 @@ const CreateLamaranPage = () => {
           >
             <div className="flex flex-col items-center justify-center pt-5 pb-6">
               {isImage ? (
-                <Image className={`w-8 h-8 mb-2 ${hasError ? "text-red-400" : "text-gray-400"}`} />
+                <Image
+                  className={`w-8 h-8 mb-2 ${hasError ? "text-red-400" : "text-gray-400"}`}
+                />
               ) : (
-                <FileText className={`w-8 h-8 mb-2 ${hasError ? "text-red-400" : "text-gray-400"}`} />
+                <FileText
+                  className={`w-8 h-8 mb-2 ${hasError ? "text-red-400" : "text-gray-400"}`}
+                />
               )}
               <p className="mb-1 text-sm text-gray-500">
                 <span className="font-semibold">Klik untuk upload</span>
               </p>
               <p className="text-xs text-gray-400">
-                {fileType === "image" ? "PNG, JPG (Max. 2MB)" : "PDF (Max. 5MB)"}
+                {fileType === "image"
+                  ? "PNG, JPG (Max. 2MB)"
+                  : "PDF (Max. 5MB)"}
               </p>
             </div>
             <input
@@ -482,7 +532,6 @@ const CreateLamaranPage = () => {
           </div>
         )}
 
-        {/* Error message di dalam FileUploadBox, bukan di luar grid */}
         <FieldError message={errors[name]} />
       </div>
     );
@@ -590,14 +639,12 @@ const CreateLamaranPage = () => {
 
           <form onSubmit={handleSubmit}>
             <div className="bg-white rounded-lg shadow">
-
               {/* Section 1: Data Pribadi */}
               <div className="p-6 border-b border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">
                   Data Pribadi
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       NIK (No. KTP) <span className="text-red-500">*</span>
@@ -645,6 +692,21 @@ const CreateLamaranPage = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Email <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      placeholder="contoh@email.com"
+                      className={inputClass("email")}
+                    />
+                    <FieldError message={errors.email} />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       No. WhatsApp <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -661,7 +723,8 @@ const CreateLamaranPage = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Posisi yang Dilamar <span className="text-red-500">*</span>
+                      Posisi yang Dilamar{" "}
+                      <span className="text-red-500">*</span>
                     </label>
                     {loadingLowongan ? (
                       <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 flex items-center justify-center h-10">
@@ -670,7 +733,9 @@ const CreateLamaranPage = () => {
                     ) : (
                       <div
                         className={`w-full px-4 py-2 border rounded-lg bg-gray-50 ${
-                          errors.posisi_dilamar ? "border-red-500" : "border-gray-300"
+                          errors.posisi_dilamar
+                            ? "border-red-500"
+                            : "border-gray-300"
                         }`}
                       >
                         <div className="flex items-center gap-2">
@@ -703,7 +768,6 @@ const CreateLamaranPage = () => {
                     />
                     <FieldError message={errors.alamat} />
                   </div>
-
                 </div>
               </div>
 
@@ -712,15 +776,46 @@ const CreateLamaranPage = () => {
                 <h2 className="text-lg font-semibold text-gray-900 mb-1">
                   Upload Foto Dokumen
                 </h2>
-                <p className="text-xs text-gray-400 mb-4">Format PNG/JPG, maksimal 2MB per file</p>
+                <p className="text-xs text-gray-400 mb-4">
+                  Format PNG/JPG, maksimal 2MB per file
+                </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Error message ada di DALAM FileUploadBox, bukan di luar */}
-                  <FileUploadBox label="Foto KTP" name="foto_ktp" accept="image/*" fileType="image" />
-                  <FileUploadBox label="Foto Kartu Keluarga (KK)" name="foto_kk" accept="image/*" fileType="image" />
-                  <FileUploadBox label="Foto SKCK" name="foto_skck" accept="image/*" fileType="image" />
-                  <FileUploadBox label="Pas Foto" name="pas_foto" accept="image/*" fileType="image" />
-                  <FileUploadBox label="Surat Keterangan Sehat" name="surat_sehat" accept="image/*" fileType="image" />
-                  <FileUploadBox label="Surat Bebas Narkoba" name="surat_anti_narkoba" accept="image/*" fileType="image" />
+                  <FileUploadBox
+                    label="Foto KTP"
+                    name="foto_ktp"
+                    accept="image/*"
+                    fileType="image"
+                  />
+                  <FileUploadBox
+                    label="Foto Kartu Keluarga (KK)"
+                    name="foto_kk"
+                    accept="image/*"
+                    fileType="image"
+                  />
+                  <FileUploadBox
+                    label="Foto SKCK"
+                    name="foto_skck"
+                    accept="image/*"
+                    fileType="image"
+                  />
+                  <FileUploadBox
+                    label="Pas Foto"
+                    name="pas_foto"
+                    accept="image/*"
+                    fileType="image"
+                  />
+                  <FileUploadBox
+                    label="Surat Keterangan Sehat"
+                    name="surat_sehat"
+                    accept="image/*"
+                    fileType="image"
+                  />
+                  <FileUploadBox
+                    label="Surat Bebas Narkoba"
+                    name="surat_anti_narkoba"
+                    accept="image/*"
+                    fileType="image"
+                  />
                 </div>
               </div>
 
@@ -729,13 +824,24 @@ const CreateLamaranPage = () => {
                 <h2 className="text-lg font-semibold text-gray-900 mb-1">
                   Upload Surat-surat (PDF)
                 </h2>
-                <p className="text-xs text-gray-400 mb-4">Format PDF, maksimal 5MB per file</p>
+                <p className="text-xs text-gray-400 mb-4">
+                  Format PDF, maksimal 5MB per file
+                </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FileUploadBox label="Surat Lamaran" name="surat_lamaran" accept=".pdf" fileType="pdf" />
-                  <FileUploadBox label="Curriculum Vitae (CV)" name="cv" accept=".pdf" fileType="pdf" />
+                  <FileUploadBox
+                    label="Surat Lamaran"
+                    name="surat_lamaran"
+                    accept=".pdf"
+                    fileType="pdf"
+                  />
+                  <FileUploadBox
+                    label="Curriculum Vitae (CV)"
+                    name="cv"
+                    accept=".pdf"
+                    fileType="pdf"
+                  />
                 </div>
               </div>
-
             </div>
 
             <div className="mt-6 flex items-center justify-end gap-4">
