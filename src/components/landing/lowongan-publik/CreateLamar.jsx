@@ -805,13 +805,13 @@ const CreateLamaranPage = () => {
                     fileType="image"
                   />
                   <FileUploadBox
-                    label="Surat Keterangan Sehat"
+                    label="Surat Keterangan Sehat(Klinik Tuntun)"
                     name="surat_sehat"
                     accept="image/*"
                     fileType="image"
                   />
                   <FileUploadBox
-                    label="Surat Bebas Narkoba"
+                    label="Surat Bebas Narkoba(RSUD Lubuk Pakam)"
                     name="surat_anti_narkoba"
                     accept="image/*"
                     fileType="image"
