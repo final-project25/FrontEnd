@@ -43,12 +43,9 @@ const PenggajianPage = () => {
   const [confirmDelete, setConfirmDelete] = useState({ open: false, id: null });
   const [confirmWa, setConfirmWa] = useState({ open: false, id: null, nama: "" });
   const [confirmCopy, setConfirmCopy] = useState(false);
-
-  // Filter tabel — null = belum dipilih (tampilkan semua)
   const [filterBulanTabel, setFilterBulanTabel] = useState(null);
   const [filterTahunTabel, setFilterTahunTabel] = useState(null);
 
-  // Filter export Excel
   const [exportBulan, setExportBulan] = useState(new Date().getMonth() + 1);
   const [exportTahun, setExportTahun] = useState(new Date().getFullYear());
 
@@ -68,13 +65,11 @@ const PenggajianPage = () => {
     adjust_thr: false,
   });
 
-  // Fetch ulang dari halaman 1 saat filter berubah
   useEffect(() => {
     setCurrentPage(1);
     getAllPenggajian(1, filterBulanTabel, filterTahunTabel);
   }, [filterBulanTabel, filterTahunTabel]);
 
-  // Fetch saat ganti halaman
   useEffect(() => {
     getAllPenggajian(currentPage, filterBulanTabel, filterTahunTabel);
   }, [currentPage]);
@@ -149,7 +144,8 @@ const PenggajianPage = () => {
       showError("Bulan referensi dan bulan baru tidak boleh sama.");
       return;
     }
-    setConfirmCopy(true);
+    setShowCopyModal(false);
+    setTimeout(() => setConfirmCopy(true), 200);
   };
 
   const handleConfirmCopy = async () => {
@@ -257,7 +253,6 @@ const PenggajianPage = () => {
       <div className="bg-white rounded-lg shadow p-4 mb-6">
         <div className="flex flex-col gap-4">
 
-          {/* Baris 1: Search + Filter tabel + Tombol aksi */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             {/* Search */}
             <div className="relative flex-1 max-w-md">
@@ -271,7 +266,6 @@ const PenggajianPage = () => {
               />
             </div>
 
-            {/* Filter bulan/tahun — reaktif langsung seperti tagihan */}
             <div className="flex items-center gap-2 flex-wrap">
               <label className="text-sm text-gray-600 whitespace-nowrap">Filter:</label>
               <select
@@ -306,7 +300,6 @@ const PenggajianPage = () => {
               )}
             </div>
 
-            {/* Tombol aksi */}
             <div className="flex items-center gap-2">
               <button
                 onClick={() => navigate("/create-penggajian")}
@@ -325,7 +318,6 @@ const PenggajianPage = () => {
             </div>
           </div>
 
-          {/* Baris 2: Export Excel */}
           <div className="border-t border-gray-200 pt-4">
             <div className="flex flex-col md:flex-row md:items-center gap-4">
               <span className="text-sm font-medium text-gray-700">Export Excel:</span>

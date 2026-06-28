@@ -23,23 +23,18 @@ const TagihanPage = () => {
   const [loading, setLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
 
-  // State pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [meta, setMeta] = useState(null);
 
-  // State filter tabel — null = belum dipilih, tidak difilter
   const [filterBulanTabel, setFilterBulanTabel] = useState(null);
   const [filterTahunTabel, setFilterTahunTabel] = useState(null);
 
-  // State filter export
   const [filterBulan, setFilterBulan] = useState(new Date().getMonth() + 1);
   const [filterTahun, setFilterTahun] = useState(new Date().getFullYear());
   const [posisiExport, setPosisiExport] = useState("");
 
-  // State search
   const [search, setSearch] = useState("");
 
-  // State copy modal
   const currentYear = new Date().getFullYear();
   const prevMonth = new Date().getMonth() === 0 ? 12 : new Date().getMonth();
   const prevYear = new Date().getMonth() === 0 ? currentYear - 1 : currentYear;
@@ -86,13 +81,11 @@ const TagihanPage = () => {
     }
   };
 
-  // Fetch saat bulan/tahun filter berubah — reset ke page 1
   useEffect(() => {
     setCurrentPage(1);
     getAllTagihan(1, filterBulanTabel, filterTahunTabel);
   }, [filterBulanTabel, filterTahunTabel]);
 
-  // Fetch saat pindah halaman (pakai filter yang sedang aktif)
   useEffect(() => {
     getAllTagihan(currentPage, filterBulanTabel, filterTahunTabel);
   }, [currentPage]);
@@ -164,7 +157,8 @@ const TagihanPage = () => {
       return;
     }
 
-    setCopyConfirmModal(true);
+    setShowCopyModal(false);
+    setTimeout(() => setCopyConfirmModal(true), 200);
   };
 
   const handleConfirmCopy = async () => {
