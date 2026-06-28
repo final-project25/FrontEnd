@@ -11,12 +11,16 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../../services/api";
 import { ClipLoader } from "react-spinners";
+import { showError, succesError } from "../../../utils/notify";
+import ConfirmModal from "../../../components/Elements/ConfirmModal";
 
 const DetailPenggajianPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [loading, setLoading] = useState(false);
   const [penggajian, setPenggajian] = useState(null);
+  const [deleteModal, setDeleteModal] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     getPenggajianById();
@@ -34,6 +38,20 @@ const DetailPenggajianPage = () => {
     }
   };
 
+  const handleDelete = async () => {
+    try {
+      setDeleteLoading(true);
+      await api.delete(`/penggajian/${id}`);
+      succesError("Data penggajian berhasil dihapus");
+      navigate("/penggajian");
+    } catch (error) {
+      showError(error.response?.data?.message || "Gagal menghapus data penggajian");
+    } finally {
+      setDeleteLoading(false);
+      setDeleteModal(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -44,7 +62,6 @@ const DetailPenggajianPage = () => {
 
   if (!penggajian) return null;
 
-  // Ambil data karyawan dari nested object
   const karyawan = penggajian.karyawan ?? {};
 
   const formatDate = (dateString) => {
@@ -89,6 +106,16 @@ const DetailPenggajianPage = () => {
 
   return (
     <div>
+      <ConfirmModal
+        isOpen={deleteModal}
+        title="Hapus Data Penggajian"
+        message={`Apakah Anda yakin ingin menghapus data penggajian ini? Tindakan ini tidak dapat dibatalkan.`}
+        confirmText="Ya, Hapus"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteModal(false)}
+        loading={deleteLoading}
+      />
+
       {/* Header */}
       <div className="mb-6">
         <button
@@ -118,7 +145,10 @@ const DetailPenggajianPage = () => {
               <Edit size={16} />
               <span>Edit</span>
             </button>
-            <button className="flex items-center gap-2 bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm">
+            <button
+              onClick={() => setDeleteModal(true)}
+              className="flex items-center gap-2 bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm"
+            >
               <Trash2 size={16} />
               <span>Hapus</span>
             </button>
