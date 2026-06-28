@@ -25,8 +25,8 @@ const CreateRekrutmenPage = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.posisi.trim())
-      newErrors.posisi = "Posisi/Jabatan wajib diisi.";
+    if (!formData.posisi)
+      newErrors.posisi = "Posisi/Jabatan wajib dipilih.";
 
     if (!formData.lokasi_kerja.trim())
       newErrors.lokasi_kerja = "Lokasi Kerja wajib diisi.";
@@ -56,7 +56,6 @@ const CreateRekrutmenPage = () => {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
-    // Clear error on change
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
@@ -67,7 +66,6 @@ const CreateRekrutmenPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Client-side validation
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -139,19 +137,24 @@ const CreateRekrutmenPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Posisi/Jabatan <span className="text-red-500">*</span>
+                  Posisi <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
+                <select
                   name="posisi"
                   value={formData.posisi}
                   onChange={handleChange}
-                  placeholder="Contoh: Supir, Security, Admin"
                   disabled={loading}
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed ${
                     errors.posisi ? "border-red-500" : "border-gray-300"
                   }`}
-                />
+                >
+                  <option value="">Pilih posisi</option>
+                  <option value="cleaning_service">Cleaning Service</option>
+                  <option value="supir">Supir</option>
+                  <option value="keamanan">Keamanan</option>
+                  <option value="jasa">Jasa</option>
+                  <option value="operator">Operator</option>
+                </select>
                 {errors.posisi && (
                   <p className="text-red-500 text-sm mt-1">{errors.posisi}</p>
                 )}
