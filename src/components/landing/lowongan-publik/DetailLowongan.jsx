@@ -22,6 +22,22 @@ const DetailLowonganPublikPage = () => {
   const [lowongan, setLowongan] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  const posisiMap = {
+    cleaning_service: "Cleaning Service",
+    supir: "Supir",
+    keamanan: "Keamanan",
+    security: "Keamanan",
+    jasa: "Jasa",
+    operator: "Operator",
+  };
+
+  const formatPosisi = (posisi) => {
+    if (!posisi) return "-";
+    return posisiMap[posisi.toLowerCase()] ?? posisi
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  };
+
   useEffect(() => {
     getLowonganById();
   }, [id]);
@@ -84,7 +100,7 @@ const DetailLowonganPublikPage = () => {
                   <div className="flex items-start justify-between py-3">
                     <div>
                       <h1 className="text-3xl md:text-4xl font-bold mb-4">
-                        {lowongan.posisi}
+                        {formatPosisi(lowongan.posisi)}
                       </h1>
                       <div className="flex items-center gap-6 text-gray-700 text-sm pb-12">
                         <div className="flex items-center gap-2">
