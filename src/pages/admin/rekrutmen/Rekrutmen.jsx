@@ -18,6 +18,22 @@ const RekrutmenPage = () => {
   const [confirmModal, setConfirmModal] = useState({ open: false, id: null, posisi: "" });
   const [toggleModal, setToggleModal] = useState({ open: false, id: null, currentStatus: "" });
 
+  const posisiMap = {
+    cleaning_service: "Cleaning Service",
+    supir: "Supir",
+    keamanan: "Keamanan",
+    security: "Keamanan",
+    jasa: "Jasa",
+    operator: "Operator",
+  };
+
+  const formatPosisi = (posisi) => {
+    if (!posisi) return "-";
+    return posisiMap[posisi.toLowerCase()] ?? posisi
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  };
+
   useEffect(() => {
     getAllRekrutmen(currentPage);
   }, [currentPage]);
@@ -137,7 +153,7 @@ const RekrutmenPage = () => {
       <ConfirmModal
         isOpen={confirmModal.open}
         title="Hapus Lowongan"
-        message={`Apakah Anda yakin ingin menghapus lowongan "${confirmModal.posisi}"?`}
+        message={`Apakah Anda yakin ingin menghapus lowongan "${formatPosisi(confirmModal.posisi)}"?`}
         confirmText="Ya, Hapus"
         onConfirm={handleConfirmDelete}
         onCancel={() => setConfirmModal({ open: false, id: null, posisi: "" })}
@@ -316,7 +332,7 @@ const RekrutmenPage = () => {
                           />
                           <div>
                             <p className="text-sm font-medium text-gray-900">
-                              {l.posisi}
+                              {formatPosisi(l.posisi)}
                             </p>
                             <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
                               <MapPin size={25} />
