@@ -36,7 +36,6 @@ const Sidebar = () => {
     }
   }, []);
 
-  // Tutup drawer saat navigasi
   useEffect(() => {
     setDrawerOpen(false);
   }, [location.pathname]);
@@ -129,7 +128,6 @@ const Sidebar = () => {
       : name.substring(0, 2).toUpperCase();
   };
 
-  // Backend bisa kembalikan name, username, atau nama_lengkap
   const displayName =
     user?.name || user?.username || user?.nama_lengkap || user?.nama || "User";
 
@@ -323,7 +321,10 @@ const Sidebar = () => {
         {/* Logout di bawah drawer */}
         <div className="p-4 border-t border-cyan-500">
           <button
-            onClick={() => setLogoutModal(true)}
+            onClick={() => {
+              setDrawerOpen(false);
+              setTimeout(() => setLogoutModal(true), 300);
+            }}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-cyan-500/60 transition-colors text-sm font-medium"
           >
             {isLoggingOut ? (
